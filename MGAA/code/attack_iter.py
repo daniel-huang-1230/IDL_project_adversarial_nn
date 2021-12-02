@@ -227,7 +227,7 @@ def cal_diff(diff_images):
     L_2 = np.mean(np.sqrt(np.sum(diff_images ** 2, axis=2)), axis=1)
     return list(L_infty), list(L_1), list(L_2)
 
-def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_width, inputs_batch, target):
+def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_width, inputs_batch, target, meta_train_only=False, meta_test_only=False):
     eps = 2.0 * max_epsilon / 255.0
     num_classes = 1001
     batch_shape = [batch_size, image_height, image_width, 3]
@@ -295,51 +295,56 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
 
             adv_images = images.copy()
             grad_images = np.zeros(batch_shape)
-            for i in range(FLAGS.num_iter):
+            for i in range(num_iter):
                 train_index = random.sample(range(10), 2)
                 test_index = train_index.pop()
 
                 # meta train step
-                num_iter = 8
-                beta = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                for j in train_index:
-                    beta[j] = 1 / len(train_index)
-                beta_ = [0, 0, 0, 0, 0, 0]
-
-                auxlogits_num = np.sum(np.array(train_index) < 2)
-                if auxlogits_num != 0:
+                if meta_test_only:
+                    adv_images_temp = adv_images
+                else:
+                    num_iter = 8
+                    beta = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     for j in train_index:
-                        if j < 2:
-                            beta_[j] = 1 / auxlogits_num
+                        beta[j] = 1 / len(train_index)
+                    beta_ = [0, 0, 0, 0, 0, 0]
 
-                beta_dict = {beta_input[j]: beta[j] for j in range(10)}
-                beta_dict_ = {beta_input_[j]: beta_[j] for j in range(2)}
-                adv_images_temp, grad_images = sess.run([x_adv, grad_adv],
-                                                        feed_dict={x_input: adv_images, labels_input: labels,
-                                                                   grad_input: grad_images,
-                                                                   num_iter_input: num_iter,
-                                                                   alpha_input: alpha_train, **beta_dict,
-                                                                   **beta_dict_})
+                    auxlogits_num = np.sum(np.array(train_index) < 2)
+                    if auxlogits_num != 0:
+                        for j in train_index:
+                            if j < 2:
+                                beta_[j] = 1 / auxlogits_num
 
-                # meta test step
-                num_iter = 1
-                beta = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                beta[test_index] = 1
-                beta_ = [0, 0, 0, 0, 0, 0]
-                if test_index < 6:
-                    beta_[test_index] = 1
-                beta_dict = {beta_input[j]: beta[j] for j in range(10)}
-                beta_dict_ = {beta_input_[j]: beta_[j] for j in range(6)}
-                adv_images_temp2, grad_images = sess.run([x_adv, grad_adv],
-                                                         feed_dict={x_input: adv_images_temp, labels_input: labels,
+                    beta_dict = {beta_input[j]: beta[j] for j in range(10)}
+                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(2)}
+                    adv_images_temp, grad_images = sess.run([x_adv, grad_adv],
+                                                            feed_dict={x_input: adv_images, labels_input: labels,
+                                                                       grad_input: grad_images,
+                                                                       num_iter_input: num_iter,
+                                                                       alpha_input: alpha_train, **beta_dict,
+                                                                       **beta_dict_})
+                if meta_train_only:
+                    adv_images = adv_images_temp
+                else:
+                    # meta test step
+                    num_iter = 1
+                    beta = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    beta[test_index] = 1
+                    beta_ = [0, 0, 0, 0, 0, 0]
+                    if test_index < 6:
+                        beta_[test_index] = 1
+                    beta_dict = {beta_input[j]: beta[j] for j in range(10)}
+                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(6)}
+                    adv_images_temp2, grad_images = sess.run([x_adv, grad_adv],
+                                                             feed_dict={x_input: adv_images_temp, labels_input: labels,
                                                                     grad_input: grad_images,
                                                                     num_iter_input: num_iter,
                                                                     alpha_input: alpha_test, **beta_dict,
                                                                     **beta_dict_})
-                adv_images += adv_images_temp2 - adv_images_temp
+                    adv_images += adv_images_temp2 - adv_images_temp
 
                 print("adv images shape = {}".format(adv_images.shape))
-
+        return adv_images
 
 def main(_):
     eps = 2.0 * FLAGS.max_epsilon / 255.0
