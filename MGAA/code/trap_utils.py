@@ -12,7 +12,7 @@ from keras.models import Sequential
 from keras.regularizers import l2
 from sklearn.metrics.pairwise import paired_cosine_distances
 
-from . import attack_iter as mgaa_attack
+import attack_iter as mgaa_attack
 
 
 def injection_func(mask, pattern, adv_img):
