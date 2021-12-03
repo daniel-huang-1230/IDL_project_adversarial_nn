@@ -52,17 +52,19 @@ np.random.seed(0)
 tf.set_random_seed(0)
 random.seed(0)
 
+
+CHECKPOINT_PATH = "../model"
 model_checkpoint_map = {
-    'inception_v3': os.path.join(FLAGS.checkpoint_path, 'inception_v3.ckpt'),
-    'inception_v4': os.path.join(FLAGS.checkpoint_path, 'inception_v4.ckpt'),
-    'inception_resnet_v2': os.path.join(FLAGS.checkpoint_path, 'inception_resnet_v2_2016_08_30.ckpt'),
-    'resnet_v2_152': os.path.join(FLAGS.checkpoint_path, 'resnet_v2_152.ckpt'),
-    'ens3_adv_inception_v3': os.path.join(FLAGS.checkpoint_path, 'ens3_adv_inception_v3_rename.ckpt'),
-    'ens4_adv_inception_v3': os.path.join(FLAGS.checkpoint_path, 'ens4_adv_inception_v3_rename.ckpt'),
-    'ens_adv_inception_resnet_v2': os.path.join(FLAGS.checkpoint_path, 'ens_adv_inception_resnet_v2_rename.ckpt'),
-    'mobilenet_v2_1.0': os.path.join(FLAGS.checkpoint_path, 'mobilenet_v2_1.0_224.ckpt'),
-    'pnasnet-5_mobile': os.path.join(FLAGS.checkpoint_path, 'pnasnet-5_mobile_model_modify.ckpt'),
-    'resnet_v2_101': os.path.join(FLAGS.checkpoint_path, 'resnet_v2_101.ckpt'),
+    'inception_v3': os.path.join(CHECKPOINT_PATH, 'inception_v3.ckpt'),
+    'inception_v4': os.path.join(CHECKPOINT_PATH, 'inception_v4.ckpt'),
+    'inception_resnet_v2': os.path.join(CHECKPOINT_PATH, 'inception_resnet_v2_2016_08_30.ckpt'),
+    'resnet_v2_152': os.path.join(CHECKPOINT_PATH, 'resnet_v2_152.ckpt'),
+    'ens3_adv_inception_v3': os.path.join(CHECKPOINT_PATH, 'ens3_adv_inception_v3_rename.ckpt'),
+    'ens4_adv_inception_v3': os.path.join(CHECKPOINT_PATH, 'ens4_adv_inception_v3_rename.ckpt'),
+    'ens_adv_inception_resnet_v2': os.path.join(CHECKPOINT_PATH, 'ens_adv_inception_resnet_v2_rename.ckpt'),
+    'mobilenet_v2_1.0': os.path.join(CHECKPOINT_PATH, 'mobilenet_v2_1.0_224.ckpt'),
+    'pnasnet-5_mobile': os.path.join(CHECKPOINT_PATH, 'pnasnet-5_mobile_model_modify.ckpt'),
+    'resnet_v2_101': os.path.join(CHECKPOINT_PATH, 'resnet_v2_101.ckpt'),
 }
 
 def gkern(kernlen=21, nsig=3):
@@ -428,7 +430,7 @@ def main(_):
                 adv_images = images.copy()
                 grad_images = np.zeros(batch_shape)
                 for i in range(FLAGS.num_iter):
-                    train_index = random.sample(range(10), 2)
+                    train_index = random.sample(range(10), 6)
                     test_index = train_index.pop()
 
                     # meta train step
@@ -438,15 +440,16 @@ def main(_):
                         beta[j] = 1 / len(train_index)
                     beta_ = [0, 0, 0, 0, 0, 0]
 
-                    auxlogits_num = np.sum(np.array(train_index) < 2)
+                    auxlogits_num = np.sum(np.array(train_index) < 6)
                     if auxlogits_num != 0:
                         for j in train_index:
                             if j < 2:
                                 beta_[j] = 1 / auxlogits_num
 
                     beta_dict = {beta_input[j]: beta[j] for j in range(10)}
-                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(2)}
-                    adv_images_temp, grad_images = sess.run([x_adv, grad_adv], feed_dict={x_input: adv_images, labels_input: labels, grad_input: grad_images, num_iter_input: num_iter, alpha_input: alpha_train, **beta_dict, **beta_dict_})
+                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(6)}
+                    adv_images_temp, grad_images = sess.run([x_adv, grad_adv],
+                    feed_dict={x_input: adv_images, labels_input: labels, grad_input: grad_images, num_iter_input: num_iter, alpha_input: alpha_train, **beta_dict, **beta_dict_})
 
                     # meta test step
                     num_iter = 1

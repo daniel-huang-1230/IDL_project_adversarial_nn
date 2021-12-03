@@ -8,6 +8,10 @@ EXP_NAME='exp_test'
 CHECKPOINT_PATH='../model'
 echo $EXP_NAME
 
+echo $INPUT_DIR
+echo $OUTPUT_DIR
+
+
 python attack_iter.py \
   --input_dir="${INPUT_DIR}" \
   --output_dir="${OUTPUT_DIR}" \
