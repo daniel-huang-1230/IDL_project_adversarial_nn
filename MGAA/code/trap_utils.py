@@ -83,7 +83,7 @@ class CoreModel(object):
             epochs = 10
 
         elif dataset == "imagenet":
-            num_classes = 1001
+            num_classes = 1000
             img_shape = (64, 64, 3) # downsampled imagenet
             per_label_ratio = 0.1
             expect_acc = 0.98
@@ -174,17 +174,43 @@ def get_mnist_model(input_shape=(28, 28, 1),
     return model
 
 
-def get_model(dataset, load_clean=False):
-    # if load_clean:
-    model = keras.applications.InceptionV3(
-        include_top=True,
-        weights="imagenet",
-        input_tensor=None,
-        input_shape=None,
-        pooling=None,
-        classes=1000,
+def get_model(dataset, load_clean=False, num_classes=1000):
+    inp = keras.layers.Input(shape=(64, 64, 3), name='image_input')
 
+    vgg_model = keras.applications.VGG16(
+        include_top=False,
+        weights="imagenet",
+        # input_tensor=tf.keras.Input(shape=(64, 64, 3)),
+        # input_tensor=None,
+        # pooling=None,
+        # classes=num_classes
     )
+
+    #
+    # model = Sequential()
+    # for layer in vgg_model.layers[:-1]:  # go through until last layer
+    #     model.add(layer)
+    #
+    # model.add(Flatten())
+    # model.add(Dense(4096, activation='relu'))
+    # model.add(Dense(num_classes, activation='softmax'))
+
+    vgg_model.trainable = False
+
+    # x = keras.layers.Flatten()(resized_x)
+    # x = keras.layers.Dense(4096, activation='relu', name='fc1')(x)
+    # x = keras.layers.Dense(4096, activation='relu', name='fc2')(x)
+    # x = keras.layers.Dense(num_classes, activation='softmax', name='predictions')(x)
+    # new_model = keras.models.Model(inputs=inp, outputs=x)
+    # new_model.compile(optimizer='adam', loss='categorical_crossentropy',
+    #                   metrics=['accuracy'])
+    x = vgg_model(inp)
+    x = Flatten()(x)  # Flatten dimensions to for use in FC layers
+    x = Dense(512, activation='relu')(x)
+    x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
+    x = Dense(256, activation='relu')(x)
+    x = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
+    model = Model(inputs=inp, outputs=x)
 
     # TODO experiment with different models to simulate blackbox; ideally the model here should be disjont to the ones used in MGAA
         # model = keras.models.load_model("/home/shansixioing/trap/models/{}_clean.h5".format(dataset))
@@ -197,24 +223,14 @@ def get_model(dataset, load_clean=False):
     #     else:
     #         raise Exception("Model not implemented")
 
+    print(model.summary())
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer='Adam',
+                  metrics=['accuracy'])
     return model
 
 
-def imagenet_generator(dataset, batch_size=32, num_classes=1000, is_training=False):
-    images = np.zeros((batch_size, 299, 299, 3))
-    labels = np.zeros((batch_size, num_classes))
-    while True:
-        count = 0
-        for sample in tfds.as_numpy(dataset):
-            image = sample["image"]
-            label = sample["label"]
-
-            images[count % batch_size] = inception_v3.preprocess_input(np.expand_dims(cv.resize(image, (224, 224)), 0))
-            labels[count % batch_size] = np.expand_dims(to_categorical(label, num_classes=num_classes), 0)
-
-            count += 1
-            if (count % batch_size == 0):
-                yield images, labels
 
 def load_dataset(dataset):
     if dataset == "cifar":
@@ -237,49 +253,50 @@ def load_dataset(dataset):
     elif dataset == 'imagenet':
         rand_batch = np.random.randint(1, 11)
 
-        img_size = 64 # downsampled size
+        img_size = 64 # we use downsampled Imagenet
+
 
         train_data = load(
             '/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_train_npz/train_data_batch_{}.npz'.format(
                 rand_batch))
 
         x = train_data['data']
+
         y = train_data['labels']
-        mean_image = train_data['mean']
+        # mean_image = train_data['mean']
         x = x / np.float32(255)
-        mean_image = mean_image / np.float32(255)
+        # mean_image = mean_image / np.float32(255)
 
         # Labels are indexed from 1, shift it so that indexes start at 0
         Y_train = [i - 1 for i in y]
         Y_train = keras.utils.to_categorical(Y_train, 1000)
 
-        x -= mean_image
+        # x -= mean_image
 
         img_size2 = img_size * img_size
 
         x = np.dstack((x[:, :img_size2], x[:, img_size2:2 * img_size2], x[:, 2 * img_size2:]))
-        X_train = x.reshape((x.shape[0], img_size, img_size, 3)).transpose(0, 3, 1, 2)
+        X_train = x.reshape((x.shape[0], img_size, img_size, 3))
 
-
-
+        print("my x train shape = ", X_train.shape)
 
         test_data = load('/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_val_npz/val_data.npz')
         x = test_data['data']
         y = test_data['labels']
-        mean_image = test_data['mean']
+        # mean_image = test_data['mean']
         x = x / np.float32(255)
-        mean_image = mean_image / np.float32(255)
+        # mean_image = mean_image / np.float32(255)
 
         # Labels are indexed from 1, shift it so that indexes start at 0
         Y_test = [i - 1 for i in y]
         Y_test = keras.utils.to_categorical(Y_test, 1000)
 
-        x -= mean_image
+        # x -= mean_image
 
         img_size2 = img_size * img_size
 
         x = np.dstack((x[:, :img_size2], x[:, img_size2:2 * img_size2], x[:, 2 * img_size2:]))
-        X_test = x.reshape((x.shape[0], img_size, img_size, 3)).transpose(0, 3, 1, 2)
+        X_test = x.reshape((x.shape[0], img_size, img_size, 3))
 
     else:
         raise Exception("Dataset not implemented")
@@ -339,8 +356,8 @@ def generate_attack(sess, model, test_X, test_Y,  method, target, num_classes, c
                                  binary_search_steps=20, max_iterations=500, abort_early=True, learning_rate=0.5)
 
     elif method == "mgaa":
-        adv_x = mgaa_attack.generate_mgaa_adv(max_epsilon=8, num_iter=10, batch_size=batch_size, image_height=32, image_width=32, inputs_batch=test_X, labels_batch=test_Y, target=target)
-        # adv_x = mgaa_attack.resize_images_np(adv_x_mgaa, (batch_size, 32, 32, 3), 32, 32, False) # restore to original CIFAR dims
+        adv_x_mgaa = mgaa_attack.generate_mgaa_adv(max_epsilon=8, num_iter=10, batch_size=batch_size, image_height=32, image_width=32, inputs_batch=test_X, labels_batch=test_Y, target=target)
+        adv_x = mgaa_attack.resize_images_np(adv_x_mgaa, (batch_size, 64, 64, 3), 32, 32, False) # restore to original CIFAR dims
     else:
         raise Exception("No such attack")
 
