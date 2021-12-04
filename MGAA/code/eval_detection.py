@@ -106,6 +106,7 @@ def eval_trapdoor(model, test_X, test_Y, y_target, pattern_dict, num_classes):
 
 def eval_defense():
     MODEL_PATH = "trapdoor_models/{}_model.h5".format(args.dataset)
+    MODEL_PATH = "trapdoor_models/{}_model.h5".format(args.dataset)
     RES_PATH = "results/{}_res.p".format(args.dataset)
 
     sess = init_gpu(args.gpu)
@@ -114,7 +115,7 @@ def eval_defense():
     else:
         ATTACK = [args.attack]
 
-    model = CoreModel(args.dataset, load_clean=True, load_model=False)
+    model = CoreModel(args.dataset, load_clean=False, load_model=True)
 
     RES = pickle.load(open(RES_PATH, "rb"))
     target_ls = RES['target_ls']
@@ -141,13 +142,14 @@ def eval_defense():
                                       pattern_dict=pattern_dict)
 
         print("Target: {} - Trapdoor Succ: {}".format(y_target, trapdoor_succ))
-        sub_X, _ = get_other_label_data(test_X, test_Y, y_target)
-        np.random.shuffle(sub_X)
+        sub_X, sub_Y = get_other_label_data(test_X, test_Y, y_target)
+        sub_X, sub_Y = shuffle(sub_X, sub_Y)
         sub_X = sub_X[:64]
+        sub_Y = sub_Y[:64]
 
         for attack in ATTACK:
             clip_max = 1 if args.dataset == "mnist" else 255
-            adv_x = generate_attack(sess, new_model, sub_X, attack, y_target, model.num_classes,
+            adv_x = generate_attack(sess, new_model, sub_X, sub_Y, attack, y_target, model.num_classes,
                                     clip_max=clip_max, clip_min=0,
                                     mnist=args.dataset == "mnist")
 
@@ -184,7 +186,7 @@ def parse_arguments(argv):
     parser.add_argument('--gpu', type=str,
                         help='GPU id', default='0')
     parser.add_argument('--dataset', type=str,
-                        help='name of dataset', default='cifar')
+                        help='name of dataset', default='imagenet')
     parser.add_argument('--attack', type=str,
                         help='attack type', default='mgaa')
     parser.add_argument('--filter-ratio', type=float,

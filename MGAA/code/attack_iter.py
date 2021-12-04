@@ -63,7 +63,7 @@ model_checkpoint_map = {
     'ens4_adv_inception_v3': os.path.join(CHECKPOINT_PATH, 'ens4_adv_inception_v3_rename.ckpt'),
     'ens_adv_inception_resnet_v2': os.path.join(CHECKPOINT_PATH, 'ens_adv_inception_resnet_v2_rename.ckpt'),
     'mobilenet_v2_1.0': os.path.join(CHECKPOINT_PATH, 'mobilenet_v2_1.0_224.ckpt'),
-    'pnasnet-5_mobile': os.path.join(CHECKPOINT_PATH, 'pnasnet-5_mobile_model_modify.ckpt'),
+    'pnasnet-5_mobile': os.path.join(CHECKPOINT_PATH, 'model_rename.ckpt'),
     'resnet_v2_101': os.path.join(CHECKPOINT_PATH, 'resnet_v2_101.ckpt'),
 }
 
@@ -122,7 +122,7 @@ def resize_images_np(inputs_batch, batch_shape, image_height, image_width, mgaa_
             images[idx, :, :, :] = image
         idx += 1
 
-    yield images
+    return images
 
 def save_images(images, filenames, output_dir):
     for i, filename in enumerate(filenames):
@@ -131,7 +131,8 @@ def save_images(images, filenames, output_dir):
 
 def graph(x, y, i, num_iter, alpha, x_max, x_min, beta, beta_, grad):
 
-    momentum = FLAGS.momentum
+    # momentum = FLAGS.momentum
+    momentum = 1.0
     num_classes = 1001
 
     with slim.arg_scope(inception_v3.inception_v3_arg_scope()):
@@ -203,17 +204,21 @@ def stop(x, y, i, num_iter, alpha, x_max, x_min, beta, beta_, grad):
 
 
 def input_diversity(input_tensor):
-    rnd = tf.random_uniform((), FLAGS.image_width, FLAGS.image_resize, dtype=tf.int32)
+    image_resize = 330
+    imagge_width = 299
+    prob = 0.4
+    # rnd = tf.random_uniform((), FLAGS.image_width, FLAGS.image_resize, dtype=tf.int32)
+    rnd = tf.random_uniform((), imagge_width, image_resize, dtype=tf.int32)
     rescaled = tf.image.resize_images(input_tensor, [rnd, rnd], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    h_rem = FLAGS.image_resize - rnd
-    w_rem = FLAGS.image_resize - rnd
+    h_rem = image_resize - rnd
+    w_rem = image_resize - rnd
     pad_top = tf.random_uniform((), 0, h_rem, dtype=tf.int32)
     pad_bottom = h_rem - pad_top
     pad_left = tf.random_uniform((), 0, w_rem, dtype=tf.int32)
     pad_right = w_rem - pad_left
     padded = tf.pad(rescaled, [[0, 0], [pad_top, pad_bottom], [pad_left, pad_right], [0, 0]], constant_values=0.)
-    padded.set_shape((input_tensor.shape[0], FLAGS.image_resize, FLAGS.image_resize, 3))
-    return tf.cond(tf.random_uniform(shape=[1])[0] < tf.constant(FLAGS.prob), lambda: padded, lambda: input_tensor)
+    padded.set_shape((input_tensor.shape[0], image_resize, image_resize, 3))
+    return tf.cond(tf.random_uniform(shape=[1])[0] < tf.constant(prob), lambda: padded, lambda: input_tensor)
 
 
 def check_or_create_dir(directory):
@@ -229,9 +234,14 @@ def cal_diff(diff_images):
     L_2 = np.mean(np.sqrt(np.sum(diff_images ** 2, axis=2)), axis=1)
     return list(L_infty), list(L_1), list(L_2)
 
-def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_width, inputs_batch, target, meta_train_only=False, meta_test_only=False):
+def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_width, inputs_batch, labels_batch, target, meta_train_only=False, meta_test_only=False):
+
+    print("TRAP DOOR TEST X SHAPE = ", inputs_batch.shape)
+    print("TRAP DOOR TEST Y SHAPE = ", labels_batch.shape)
+
+
     eps = 2.0 * max_epsilon / 255.0
-    num_classes = 1001
+    num_classes = 10
     batch_shape = [batch_size, image_height, image_width, 3]
 
     # Logger
@@ -292,13 +302,15 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
             alpha_train = eps / 16
 
 
-            images = resize_images_np(inputs_batch, batch_shape, image_height, image_width)
-            labels = target
+            # images = resize_images_np(inputs_batch, batch_shape, image_height, image_width)
+            images = inputs_batch
+            print("images from Trapdoor shape = ", images.shape)
+            labels = labels_batch
 
             adv_images = images.copy()
             grad_images = np.zeros(batch_shape)
             for i in range(num_iter):
-                train_index = random.sample(range(10), 2)
+                train_index = random.sample(range(10), 7)
                 test_index = train_index.pop()
 
                 # meta train step
@@ -311,14 +323,14 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
                         beta[j] = 1 / len(train_index)
                     beta_ = [0, 0, 0, 0, 0, 0]
 
-                    auxlogits_num = np.sum(np.array(train_index) < 2)
+                    auxlogits_num = np.sum(np.array(train_index) < 7)
                     if auxlogits_num != 0:
                         for j in train_index:
                             if j < 2:
                                 beta_[j] = 1 / auxlogits_num
 
                     beta_dict = {beta_input[j]: beta[j] for j in range(10)}
-                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(2)}
+                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(7)}
                     adv_images_temp, grad_images = sess.run([x_adv, grad_adv],
                                                             feed_dict={x_input: adv_images, labels_input: labels,
                                                                        grad_input: grad_images,
@@ -336,7 +348,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
                     if test_index < 6:
                         beta_[test_index] = 1
                     beta_dict = {beta_input[j]: beta[j] for j in range(10)}
-                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(6)}
+                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(7)}
                     adv_images_temp2, grad_images = sess.run([x_adv, grad_adv],
                                                              feed_dict={x_input: adv_images_temp, labels_input: labels,
                                                                     grad_input: grad_images,

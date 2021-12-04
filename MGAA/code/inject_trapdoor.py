@@ -77,6 +77,8 @@ def main():
     new_model = model.model
 
     target_ls = range(model.num_classes)
+
+    print("Model number of classes: ", model.num_classes)
     INJECT_RATIO = args.inject_ratio
     print("Injection Ratio: ", INJECT_RATIO)
     f_name = "{}".format(args.dataset)
@@ -156,7 +158,7 @@ def main():
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, help='GPU id', default='0')
-    parser.add_argument('--dataset', type=str, help='name of dataset. mnist or cifar', default='mnist')
+    parser.add_argument('--dataset', type=str, help='name of dataset. mnist or cifar or image net', default='imagenet')
     parser.add_argument('--inject-ratio', type=float, help='injection ratio', default=0.5)
     parser.add_argument('--seed', type=int, help='', default=0)
     parser.add_argument('--num_cluster', type=int, help='', default=7)

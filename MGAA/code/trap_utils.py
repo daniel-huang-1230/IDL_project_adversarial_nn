@@ -12,8 +12,16 @@ from keras.models import Sequential
 from keras.regularizers import l2
 from sklearn.metrics.pairwise import paired_cosine_distances
 
+from keras.applications.inception_v3 import inception_v3
+from keras.applications.inception_v3 import preprocess_input, decode_predictions
 import attack_iter as mgaa_attack
+import tensorflow_datasets as tfds
+from keras.preprocessing import image
+from keras.utils import to_categorical
+from numpy import load
 
+
+import cv2 as cv
 
 def injection_func(mask, pattern, adv_img):
     return mask * pattern + (1 - mask) * adv_img
@@ -74,6 +82,15 @@ class CoreModel(object):
             pattern_size = 3
             epochs = 10
 
+        elif dataset == "imagenet":
+            num_classes = 1001
+            img_shape = (64, 64, 3) # downsampled imagenet
+            per_label_ratio = 0.1
+            expect_acc = 0.98
+            target_layer = 'dense'
+            mask_ratio = 0.1
+            pattern_size = 3 # TODO tune?
+            epochs = 30
         else:
             raise Exception("Not implement")
 
@@ -85,6 +102,9 @@ class CoreModel(object):
         self.mask_ratio = mask_ratio
         self.epochs = epochs
         self.pattern_size = pattern_size
+
+
+        # print(self.model.summary())
 
 
 def get_cifar_model(softmax=True):
@@ -155,18 +175,46 @@ def get_mnist_model(input_shape=(28, 28, 1),
 
 
 def get_model(dataset, load_clean=False):
-    if load_clean:
-        model = keras.models.load_model("/home/shansixioing/trap/models/{}_clean.h5".format(dataset))
-    else:
-        if dataset == "cifar":
-            model = get_cifar_model()
-        elif dataset == 'mnist':
-            model = get_mnist_model()
-        else:
-            raise Exception("Model not implemented")
+    # if load_clean:
+    model = keras.applications.InceptionV3(
+        include_top=True,
+        weights="imagenet",
+        input_tensor=None,
+        input_shape=None,
+        pooling=None,
+        classes=1000,
+
+    )
+
+    # TODO experiment with different models to simulate blackbox; ideally the model here should be disjont to the ones used in MGAA
+        # model = keras.models.load_model("/home/shansixioing/trap/models/{}_clean.h5".format(dataset))
+    # model = keras.models.load_model("trapdoor_models/{}_model.h5".format(dataset))
+    # else:
+    #     if dataset == "cifar":
+    #         model = get_cifar_model()
+    #     elif dataset == 'mnist':
+    #         model = get_mnist_model()
+    #     else:
+    #         raise Exception("Model not implemented")
 
     return model
 
+
+def imagenet_generator(dataset, batch_size=32, num_classes=1000, is_training=False):
+    images = np.zeros((batch_size, 299, 299, 3))
+    labels = np.zeros((batch_size, num_classes))
+    while True:
+        count = 0
+        for sample in tfds.as_numpy(dataset):
+            image = sample["image"]
+            label = sample["label"]
+
+            images[count % batch_size] = inception_v3.preprocess_input(np.expand_dims(cv.resize(image, (224, 224)), 0))
+            labels[count % batch_size] = np.expand_dims(to_categorical(label, num_classes=num_classes), 0)
+
+            count += 1
+            if (count % batch_size == 0):
+                yield images, labels
 
 def load_dataset(dataset):
     if dataset == "cifar":
@@ -186,6 +234,53 @@ def load_dataset(dataset):
         Y_test = keras.utils.to_categorical(Y_test, 10)
         X_train = X_train / 255.0
         X_test = X_test / 255.0
+    elif dataset == 'imagenet':
+        rand_batch = np.random.randint(1, 11)
+
+        img_size = 64 # downsampled size
+
+        train_data = load(
+            '/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_train_npz/train_data_batch_{}.npz'.format(
+                rand_batch))
+
+        x = train_data['data']
+        y = train_data['labels']
+        mean_image = train_data['mean']
+        x = x / np.float32(255)
+        mean_image = mean_image / np.float32(255)
+
+        # Labels are indexed from 1, shift it so that indexes start at 0
+        Y_train = [i - 1 for i in y]
+        Y_train = keras.utils.to_categorical(Y_train, 1000)
+
+        x -= mean_image
+
+        img_size2 = img_size * img_size
+
+        x = np.dstack((x[:, :img_size2], x[:, img_size2:2 * img_size2], x[:, 2 * img_size2:]))
+        X_train = x.reshape((x.shape[0], img_size, img_size, 3)).transpose(0, 3, 1, 2)
+
+
+
+
+        test_data = load('/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_val_npz/val_data.npz')
+        x = test_data['data']
+        y = test_data['labels']
+        mean_image = test_data['mean']
+        x = x / np.float32(255)
+        mean_image = mean_image / np.float32(255)
+
+        # Labels are indexed from 1, shift it so that indexes start at 0
+        Y_test = [i - 1 for i in y]
+        Y_test = keras.utils.to_categorical(Y_test, 1000)
+
+        x -= mean_image
+
+        img_size2 = img_size * img_size
+
+        x = np.dstack((x[:, :img_size2], x[:, img_size2:2 * img_size2], x[:, 2 * img_size2:]))
+        X_test = x.reshape((x.shape[0], img_size, img_size, 3)).transpose(0, 3, 1, 2)
+
     else:
         raise Exception("Dataset not implemented")
 
@@ -214,7 +309,7 @@ class CallbackGenerator(keras.callbacks.Callback):
         #     self.model.stop_training = True
 
 
-def generate_attack(sess, model, test_X, method, target, num_classes, clip_max=255.0,
+def generate_attack(sess, model, test_X, test_Y,  method, target, num_classes, clip_max=255.0,
                     clip_min=0.0, mnist=False, confidence=0, batch_size=None):
     from cleverhans import utils_keras
     from cleverhans.utils import set_log_level
@@ -244,8 +339,8 @@ def generate_attack(sess, model, test_X, method, target, num_classes, clip_max=2
                                  binary_search_steps=20, max_iterations=500, abort_early=True, learning_rate=0.5)
 
     elif method == "mgaa":
-        adv_x_mgaa = mgaa_attack.generate_mgaa_adv(max_epsilon=16, num_iter=10, batch_size=batch_size, image_height=299, image_width=299, inputs_batch=test_X, target=target)
-        adv_x = mgaa_attack.resize_images_np(adv_x_mgaa, (batch_size, 32, 32, 3), 32, 32, False) # restore to original CIFAR dims
+        adv_x = mgaa_attack.generate_mgaa_adv(max_epsilon=8, num_iter=10, batch_size=batch_size, image_height=32, image_width=32, inputs_batch=test_X, labels_batch=test_Y, target=target)
+        # adv_x = mgaa_attack.resize_images_np(adv_x_mgaa, (batch_size, 32, 32, 3), 32, 32, False) # restore to original CIFAR dims
     else:
         raise Exception("No such attack")
 
