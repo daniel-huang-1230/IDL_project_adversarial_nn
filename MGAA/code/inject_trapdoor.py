@@ -54,7 +54,7 @@ class DataGenerator(object):
 
 
 def lr_schedule(epoch):
-    lr = 1e-3
+    lr = 5e-4
     if epoch > 50:
         lr *= 0.5e-1
     elif epoch > 40:

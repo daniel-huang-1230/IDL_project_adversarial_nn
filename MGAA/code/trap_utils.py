@@ -90,7 +90,7 @@ class CoreModel(object):
             target_layer = 'dense'
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
-            epochs = 30
+            epochs = 60
         else:
             raise Exception("Not implement")
 
@@ -177,12 +177,12 @@ def get_mnist_model(input_shape=(28, 28, 1),
 def get_model(dataset, load_clean=False, num_classes=1000):
     inp = keras.layers.Input(shape=(64, 64, 3), name='image_input')
 
-    vgg_model = keras.applications.VGG16(
+    source_model = keras.applications.VGG16(
         include_top=False,
         weights="imagenet",
         # input_tensor=tf.keras.Input(shape=(64, 64, 3)),
-        # input_tensor=None,
-        # pooling=None,
+        # input_shape=(64,64,3),
+        pooling='avg',
         # classes=num_classes
     )
 
@@ -195,7 +195,9 @@ def get_model(dataset, load_clean=False, num_classes=1000):
     # model.add(Dense(4096, activation='relu'))
     # model.add(Dense(num_classes, activation='softmax'))
 
-    vgg_model.trainable = False
+    source_model.trainable = False
+
+    print(source_model.summary())
 
     # x = keras.layers.Flatten()(resized_x)
     # x = keras.layers.Dense(4096, activation='relu', name='fc1')(x)
@@ -204,11 +206,12 @@ def get_model(dataset, load_clean=False, num_classes=1000):
     # new_model = keras.models.Model(inputs=inp, outputs=x)
     # new_model.compile(optimizer='adam', loss='categorical_crossentropy',
     #                   metrics=['accuracy'])
-    x = vgg_model(inp)
-    x = Flatten()(x)  # Flatten dimensions to for use in FC layers
+    x = source_model(inp)
+    # x = Flatten()(x)  # Flatten dimensions to for use in FC layers
+    x  = Dropout(0.2)(x)
     x = Dense(512, activation='relu')(x)
-    x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
-    x = Dense(256, activation='relu')(x)
+    # x = Dropout(0.3)(x)  # Dropout layer to reduce overfitting
+    # x = Dense(1000, activation='relu')(x)
     x = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
     model = Model(inputs=inp, outputs=x)
 
