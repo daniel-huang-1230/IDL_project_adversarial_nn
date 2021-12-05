@@ -59,7 +59,8 @@ class CoreModel(object):
     def __init__(self, dataset, load_clean=False, load_model=True):
         self.dataset = dataset
         if load_model:
-            self.model = get_model(dataset, load_clean=load_clean)
+            self.model = get_vgg16_model()
+            # self.model = get_xception_model()
         else:
             self.model = None
         if dataset == "cifar":
@@ -86,11 +87,11 @@ class CoreModel(object):
             num_classes = 1000
             img_shape = (64, 64, 3) # downsampled imagenet
             per_label_ratio = 0.1
-            expect_acc = 0.98
+            expect_acc = 0.6
             target_layer = 'dense'
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
-            epochs = 60
+            epochs = 80
         else:
             raise Exception("Not implement")
 
@@ -174,57 +175,56 @@ def get_mnist_model(input_shape=(28, 28, 1),
     return model
 
 
-def get_model(dataset, load_clean=False, num_classes=1000):
-    inp = keras.layers.Input(shape=(64, 64, 3), name='image_input')
+def get_xception_model():
+    base_model = keras.applications.Xception(
+        weights='imagenet',  # Load weights pre-trained on ImageNet.
+        input_shape=(64, 64, 3),
+        include_top=False)
+
+    base_model.trainable = False
+
+    inputs = keras.Input(shape=(64, 64, 3))
+    # We make sure that the base_model is running in inference mode here,
+    # by passing `training=False`. This is important for fine-tuning, as you will
+    # learn in a few paragraphs.
+    x = base_model(inputs, training=False)
+    # Convert features of shape `base_model.output_shape[1:]` to vectors
+    x = keras.layers.GlobalAveragePooling2D()(x)
+    # A Dense classifier with a single unit (binary classification)
+    outputs = keras.layers.Dense(1)(x)
+    model = keras.Model(inputs, outputs)
+
+    model.compile(optimizer=keras.optimizers.Adam(),
+                  loss=keras.losses.BinaryCrossentropy(from_logits=True),
+                  metrics=[keras.metrics.BinaryAccuracy()])
+    return model
+
+def get_vgg16_model(num_classes=1000):
+    inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
 
     source_model = keras.applications.VGG16(
         include_top=False,
         weights="imagenet",
         # input_tensor=tf.keras.Input(shape=(64, 64, 3)),
         # input_shape=(64,64,3),
-        pooling='avg',
+        # pooling='avg',
         # classes=num_classes
     )
 
-    #
-    # model = Sequential()
-    # for layer in vgg_model.layers[:-1]:  # go through until last layer
-    #     model.add(layer)
-    #
-    # model.add(Flatten())
-    # model.add(Dense(4096, activation='relu'))
-    # model.add(Dense(num_classes, activation='softmax'))
-
     source_model.trainable = False
+    # for layer in source_model.layers[:15]:
+    #     layer.trainable = False
 
     print(source_model.summary())
 
-    # x = keras.layers.Flatten()(resized_x)
-    # x = keras.layers.Dense(4096, activation='relu', name='fc1')(x)
-    # x = keras.layers.Dense(4096, activation='relu', name='fc2')(x)
-    # x = keras.layers.Dense(num_classes, activation='softmax', name='predictions')(x)
-    # new_model = keras.models.Model(inputs=inp, outputs=x)
-    # new_model.compile(optimizer='adam', loss='categorical_crossentropy',
-    #                   metrics=['accuracy'])
-    x = source_model(inp)
-    # x = Flatten()(x)  # Flatten dimensions to for use in FC layers
-    x  = Dropout(0.2)(x)
-    x = Dense(512, activation='relu')(x)
-    # x = Dropout(0.3)(x)  # Dropout layer to reduce overfitting
-    # x = Dense(1000, activation='relu')(x)
-    x = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
-    model = Model(inputs=inp, outputs=x)
 
-    # TODO experiment with different models to simulate blackbox; ideally the model here should be disjont to the ones used in MGAA
-        # model = keras.models.load_model("/home/shansixioing/trap/models/{}_clean.h5".format(dataset))
-    # model = keras.models.load_model("trapdoor_models/{}_model.h5".format(dataset))
-    # else:
-    #     if dataset == "cifar":
-    #         model = get_cifar_model()
-    #     elif dataset == 'mnist':
-    #         model = get_mnist_model()
-    #     else:
-    #         raise Exception("Model not implemented")
+    x = source_model(inp)
+    x = Flatten()(x)  # Flatten dimensions to for use in FC layers
+    x = Dense(4096, activation='relu')(x)
+    x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
+    x = Dense(4096, activation='relu')(x)
+    out = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
+    model = Model(inputs=inp, outputs=out)
 
     print(model.summary())
 
@@ -254,14 +254,11 @@ def load_dataset(dataset):
         X_train = X_train / 255.0
         X_test = X_test / 255.0
     elif dataset == 'imagenet':
-        rand_batch = np.random.randint(1, 11)
-
         img_size = 64 # we use downsampled Imagenet
 
 
         train_data = load(
-            '/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_train_npz/train_data_batch_{}.npz'.format(
-                rand_batch))
+            '/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_train_npz/all.npz')
 
         x = train_data['data']
 

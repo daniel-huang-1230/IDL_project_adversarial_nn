@@ -54,7 +54,7 @@ class DataGenerator(object):
 
 
 def lr_schedule(epoch):
-    lr = 5e-4
+    lr = 5e-5
     if epoch > 50:
         lr *= 0.5e-1
     elif epoch > 40:
@@ -94,12 +94,25 @@ def main():
     RES['target_ls'] = target_ls
     RES['pattern_dict'] = pattern_dict
 
-    data_gen = ImageDataGenerator()
+    # data_gen = ImageDataGenerator()
 
-    X_train, Y_train, X_test, Y_test = load_dataset(args.dataset)
-    train_generator = data_gen.flow(X_train, Y_train, batch_size=32)
-    number_images = len(X_train)
-    test_generator = data_gen.flow(X_test, Y_test, batch_size=32)
+    train_datagen = ImageDataGenerator(rescale=1. / 255)
+    test_datagen = ImageDataGenerator(rescale=1. / 255)
+    train_generator = train_datagen.flow_from_directory(
+        '/content/drive/MyDrive/11-785_baseline_model/train',
+        target_size=(224, 224),
+        batch_size=32,
+        class_mode='categorical')
+    test_generator = test_datagen.flow_from_directory(
+        '/content/drive/MyDrive/11-785_baseline_model/val',
+        target_size=(224, 224),
+        batch_size=32,
+        class_mode='categorical')
+
+    # X_train, Y_train, X_test, Y_test = load_dataset(args.dataset)
+    # train_generator = data_gen.flow_from_directory(TRAIN_DIR, Y_train, batch_size=32)
+    # number_images = len(X_train)
+    # test_generator = data_gen.flow(X_test, Y_test, batch_size=32)
 
     new_model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=lr_schedule(0)),
                       metrics=['accuracy'])
@@ -129,13 +142,13 @@ def main():
     callbacks = [lr_reducer, lr_scheduler, cb]
 
     print("First Step: Training Normal Model...")
-    new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=number_images // 32,
+    new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // 32,
                             epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
                             use_multiprocessing=True,
                             workers=1)
 
     print("Second Step: Injecting Trapdoor...")
-    new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=number_images // 32,
+    new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // 32,
                             epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
                             use_multiprocessing=True,
                             workers=1)
