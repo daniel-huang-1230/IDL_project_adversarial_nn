@@ -85,13 +85,13 @@ class CoreModel(object):
 
         elif dataset == "imagenet":
             num_classes = 1000
-            img_shape = (64, 64, 3) # downsampled imagenet
+            img_shape = (224, 224, 3) # No downsampled imagenet
             per_label_ratio = 0.1
             expect_acc = 0.6
             target_layer = 'dense'
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
-            epochs = 80
+            epochs = 10 #
         else:
             raise Exception("Not implement")
 
@@ -200,38 +200,38 @@ def get_xception_model():
     return model
 
 def get_vgg16_model(num_classes=1000):
-    inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
+    # inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
 
     source_model = keras.applications.VGG16(
-        include_top=False,
+        include_top=True,
         weights="imagenet",
         # input_tensor=tf.keras.Input(shape=(64, 64, 3)),
         # input_shape=(64,64,3),
         # pooling='avg',
-        # classes=num_classes
+        classes=num_classes
     )
 
-    source_model.trainable = False
+    # source_model.trainable = False
     # for layer in source_model.layers[:15]:
     #     layer.trainable = False
 
     print(source_model.summary())
 
 
-    x = source_model(inp)
-    x = Flatten()(x)  # Flatten dimensions to for use in FC layers
-    x = Dense(4096, activation='relu')(x)
-    x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
-    x = Dense(4096, activation='relu')(x)
-    out = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
-    model = Model(inputs=inp, outputs=out)
+    # x = source_model(inp)
+    # x = Flatten()(x)  # Flatten dimensions to for use in FC layers
+    # x = Dense(4096, activation='relu')(x)
+    # x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
+    # x = Dense(4096, activation='relu')(x)
+    # out = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
+    # model = Model(inputs=inp, outputs=out)
 
-    print(model.summary())
+    # print(model.summary())
 
-    model.compile(loss='categorical_crossentropy',
+    source_model.compile(loss='categorical_crossentropy',
                   optimizer='Adam',
                   metrics=['accuracy'])
-    return model
+    return source_model
 
 
 
@@ -258,7 +258,7 @@ def load_dataset(dataset):
 
 
         train_data = load(
-            '/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_train_npz/all.npz')
+            '/content/drive/MyDrive/11785_baseline_model/imagenet/Imagenet64_train_npz/all.npz')
 
         x = train_data['data']
 
@@ -280,7 +280,7 @@ def load_dataset(dataset):
 
         print("my x train shape = ", X_train.shape)
 
-        test_data = load('/content/drive/MyDrive/11-785_baseline_model/imagenet/Imagenet64_val_npz/val_data.npz')
+        test_data = load('/content/drive/MyDrive/11785_baseline_model/imagenet/Imagenet64_val_npz/val_data.npz')
         x = test_data['data']
         y = test_data['labels']
         # mean_image = test_data['mean']

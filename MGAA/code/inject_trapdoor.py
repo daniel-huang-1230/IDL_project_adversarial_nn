@@ -99,12 +99,12 @@ def main():
     train_datagen = ImageDataGenerator(rescale=1. / 255)
     test_datagen = ImageDataGenerator(rescale=1. / 255)
     train_generator = train_datagen.flow_from_directory(
-        '/content/drive/MyDrive/11-785_baseline_model/train',
+        '/content/drive/MyDrive/11785_baseline_model/train',
         target_size=(224, 224),
         batch_size=32,
         class_mode='categorical')
     test_generator = test_datagen.flow_from_directory(
-        '/content/drive/MyDrive/11-785_baseline_model/val',
+        '/content/drive/MyDrive/11785_baseline_model/val',
         target_size=(224, 224),
         batch_size=32,
         class_mode='categorical')
@@ -156,7 +156,7 @@ def main():
     if not os.path.exists(model_file):
         raise Exception("NO GOOD MODEL!!!")
 
-    new_model = keras.models.load_model(model_file)
+    # new_model = keras.models.load_model(model_file)
     loss, acc = new_model.evaluate_generator(test_nor_gen, verbose=0, steps=100)
 
     RES["normal_acc"] = acc
