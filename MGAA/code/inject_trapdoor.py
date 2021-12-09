@@ -96,17 +96,20 @@ def main():
 
     # data_gen = ImageDataGenerator()
 
+
+    BATCH_SIZE = 128
+
     train_datagen = ImageDataGenerator(rescale=1. / 255)
     test_datagen = ImageDataGenerator(rescale=1. / 255)
     train_generator = train_datagen.flow_from_directory(
         '/home/ec2-user/11785/train',
         target_size=(224, 224),
-        batch_size=32,
+        batch_size=BATCH_SIZE,
         class_mode='categorical')
     test_generator = test_datagen.flow_from_directory(
         '/home/ec2-user/11785/val',
         target_size=(224, 224),
-        batch_size=32,
+        batch_size=BATCH_SIZE,
         class_mode='categorical')
 
     # X_train, Y_train, X_test, Y_test = load_dataset(args.dataset)
@@ -142,13 +145,13 @@ def main():
     callbacks = [lr_reducer, lr_scheduler, cb]
 
     print("First Step: Training Normal Model...")
-    new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // 32,
+    new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
                             epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
                             use_multiprocessing=True,
                             workers=1)
 
     print("Second Step: Injecting Trapdoor...")
-    new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // 32,
+    new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
                             epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
                             use_multiprocessing=True,
                             workers=1)
