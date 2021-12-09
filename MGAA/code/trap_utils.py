@@ -203,10 +203,10 @@ def get_xception_model():
     return model
 
 def get_vgg16_model(num_classes=1000):
-    # inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
+    inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
 
     source_model = keras.applications.VGG16(
-        include_top=True,
+        include_top=False,
         weights="imagenet",
         # input_tensor=tf.keras.Input(shape=(64, 64, 3)),
         # input_shape=(64,64,3),
@@ -214,27 +214,27 @@ def get_vgg16_model(num_classes=1000):
         classes=num_classes
     )
 
-    source_model.trainable = False
-    # for layer in source_model.layers[:20]:
-    #     layer.trainable = False
+    # source_model.trainable = False
+    for layer in source_model.layers[:15]:
+        layer.trainable = False
 
     print(source_model.summary())
 
 
-    # x = source_model(inp)
-    # x = Flatten()(x)  # Flatten dimensions to for use in FC layers
-    # x = Dense(4096, activation='relu')(x)
-    # x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
-    # x = Dense(4096, activation='relu')(x)
-    # out = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
-    # model = Model(inputs=inp, outputs=out)
+    x = source_model(inp)
+    x = Flatten()(x)  # Flatten dimensions to for use in FC layers
+    x = Dense(4096, activation='relu')(x)
+    x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
+    x = Dense(4096, activation='relu')(x)
+    out = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
+    model = Model(inputs=inp, outputs=out)
 
-    # print(model.summary())
+    print(model.summary())
 
-    source_model.compile(loss='categorical_crossentropy',
+    model.compile(loss='categorical_crossentropy',
                   optimizer='Adam',
                   metrics=['accuracy'])
-    return source_model
+    return model
 
     # input_shape =(224, 224, 3)
     #
