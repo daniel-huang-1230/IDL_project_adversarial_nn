@@ -88,6 +88,9 @@ def main():
 
 
     with sess:
+
+        devices = sess.list_devices()
+        print(devices)
         pattern_dict = craft_trapdoors(target_ls, model.img_shape, args.num_cluster,
                                        pattern_size=args.pattern_size, mask_ratio=args.mask_ratio,
                                        mnist=1 if args.dataset == 'mnist' or args.dataset == 'cifar' else 0)
