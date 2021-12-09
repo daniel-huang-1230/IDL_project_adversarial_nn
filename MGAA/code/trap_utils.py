@@ -356,8 +356,9 @@ def generate_attack(sess, model, test_X, test_Y,  method, target, num_classes, c
                                  binary_search_steps=20, max_iterations=500, abort_early=True, learning_rate=0.5)
 
     elif method == "mgaa":
-        adv_x_mgaa = mgaa_attack.generate_mgaa_adv(max_epsilon=8, num_iter=10, batch_size=batch_size, image_height=32, image_width=32, inputs_batch=test_X, labels_batch=test_Y, target=target)
-        adv_x = mgaa_attack.resize_images_np(adv_x_mgaa, (batch_size, 64, 64, 3), 32, 32, False) # restore to original CIFAR dims
+        # TODO: shape of MGAA adv images is of shape (64, 299, 299, 33)
+        adv_x_mgaa = mgaa_attack.generate_mgaa_adv(max_epsilon=8, num_iter=10, batch_size=batch_size, image_height=224, image_width=224, inputs_batch=test_X, labels_batch=test_Y)
+        # adv_x = mgaa_attack.resize_images_np(adv_x_mgaa, (batch_size, 224, 224, 3), 224, 224, False) # restore to original CIFAR dims
     else:
         raise Exception("No such attack")
 

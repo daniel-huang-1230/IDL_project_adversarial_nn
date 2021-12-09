@@ -234,7 +234,7 @@ def cal_diff(diff_images):
     L_2 = np.mean(np.sqrt(np.sum(diff_images ** 2, axis=2)), axis=1)
     return list(L_infty), list(L_1), list(L_2)
 
-def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_width, inputs_batch, labels_batch, target, meta_train_only=False, meta_test_only=False):
+def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_width, inputs_batch, labels_batch, meta_train_only=False, meta_test_only=False):
 
     print("TRAP DOOR TEST X SHAPE = ", inputs_batch.shape)
     print("TRAP DOOR TEST Y SHAPE = ", labels_batch.shape)
