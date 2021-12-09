@@ -19,7 +19,7 @@ from nets import inception_v3, inception_v4, inception_resnet_v2, resnet_v2
 from nets.mobilenet import mobilenet_v2
 from nets.nasnet import pnasnet
 
-slim = tf.contrib.slim
+slim = tf.estimator.slim
 
 
 tf.flags.DEFINE_string('checkpoint_path', './model', 'Path to checkpoint.')
