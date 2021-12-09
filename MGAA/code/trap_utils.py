@@ -30,12 +30,14 @@ def injection_func(mask, pattern, adv_img):
 def fix_gpu_memory(mem_fraction=1):
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     tf_config = None
+    print("gpu available? : ", tf.test.is_gpu_available())
+
     if tf.test.is_gpu_available():
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=mem_fraction)
         tf_config = tf.ConfigProto(gpu_options=gpu_options)
         tf_config.gpu_options.allow_growth = True
         tf_config.log_device_placement = True
-        print("gpu available!")
+
     init_op = tf.global_variables_initializer()
     sess = tf.Session(config=tf_config)
     sess.run(init_op)
