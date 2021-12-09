@@ -4,7 +4,7 @@ import pickle
 import random
 import sys
 
-import keras
+from tensorflow import keras
 import numpy as np
 from keras.callbacks import LearningRateScheduler
 from keras.callbacks import ReduceLROnPlateau
