@@ -13,7 +13,7 @@ from scipy.misc import imread
 from scipy.misc import imsave
 from scipy.misc import imresize
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from nets import inception_v3, inception_v4, inception_resnet_v2, resnet_v2
 from nets.mobilenet import mobilenet_v2
