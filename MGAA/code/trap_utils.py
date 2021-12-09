@@ -94,7 +94,7 @@ class CoreModel(object):
             target_layer = 'dense'
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
-            epochs = 10 #
+            epochs = 5 #
         else:
             raise Exception("Not implement")
 
@@ -205,37 +205,57 @@ def get_xception_model():
 def get_vgg16_model(num_classes=1000):
     # inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
 
-    source_model = keras.applications.VGG16(
-        include_top=True,
-        weights="imagenet",
-        # input_tensor=tf.keras.Input(shape=(64, 64, 3)),
-        # input_shape=(64,64,3),
-        # pooling='avg',
-        classes=num_classes
-    )
+    # source_model = keras.applications.VGG16(
+    #     include_top=True,
+    #     weights="imagenet",
+    #     # input_tensor=tf.keras.Input(shape=(64, 64, 3)),
+    #     # input_shape=(64,64,3),
+    #     # pooling='avg',
+    #     classes=num_classes
+    # )
+    #
+    # # source_model.trainable = False
+    # for layer in source_model.layers[:20]:
+    #     layer.trainable = False
+    #
+    # print(source_model.summary())
+    #
+    #
+    # # x = source_model(inp)
+    # # x = Flatten()(x)  # Flatten dimensions to for use in FC layers
+    # # x = Dense(4096, activation='relu')(x)
+    # # x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
+    # # x = Dense(4096, activation='relu')(x)
+    # # out = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
+    # # model = Model(inputs=inp, outputs=out)
+    #
+    # # print(model.summary())
+    #
+    # source_model.compile(loss='categorical_crossentropy',
+    #               optimizer='Adam',
+    #               metrics=['accuracy'])
+    # return source_model
 
-    # source_model.trainable = False
-    for layer in source_model.layers[:20]:
+    input_shape =(224, 224, 3)
+
+    bottleneck_model = keras.applications.VGG16(include_top=False,
+                                   input_tensor=keras.layers.Input(input_shape))
+    # bottleneck_model.trainable = False
+    for layer in bottleneck_model.layers:
         layer.trainable = False
 
-    print(source_model.summary())
+    x = bottleneck_model.input
+    y = bottleneck_model.output
+    y = Flatten()(y)
+    y = Dense(2048, activation='relu')(y)
+    y = Dropout(.5)(y)
+    y = Dense(1024, activation='relu')(y)
+    y = Dropout(.5)(y)
+    y = Dense(1)(y)
 
-
-    # x = source_model(inp)
-    # x = Flatten()(x)  # Flatten dimensions to for use in FC layers
-    # x = Dense(4096, activation='relu')(x)
-    # x = Dropout(0.5)(x)  # Dropout layer to reduce overfitting
-    # x = Dense(4096, activation='relu')(x)
-    # out = Dense(num_classes, activation='softmax')(x)  # Softmax for multiclass
-    # model = Model(inputs=inp, outputs=out)
-
-    # print(model.summary())
-
-    source_model.compile(loss='categorical_crossentropy',
-                  optimizer='Adam',
-                  metrics=['accuracy'])
-    return source_model
-
+    model = Model(input=x, output=y)
+    # model.compile(optimizer=Adam(lr=1e-4), loss='mse')
+    return model
 
 
 def load_dataset(dataset):
