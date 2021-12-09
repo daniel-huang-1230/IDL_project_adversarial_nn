@@ -12,8 +12,8 @@ from keras.models import Sequential
 from keras.regularizers import l2
 from sklearn.metrics.pairwise import paired_cosine_distances
 
-from keras.applications.inception_v3 import inception_v3
-from keras.applications.inception_v3 import preprocess_input, decode_predictions
+# from keras.applications.inception_v3 import inception_v3
+# from keras.applications.inception_v3 import preprocess_input, decode_predictions
 import attack_iter as mgaa_attack
 import tensorflow_datasets as tfds
 from keras.preprocessing import image
