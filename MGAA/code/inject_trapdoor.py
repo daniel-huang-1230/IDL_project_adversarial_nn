@@ -9,9 +9,9 @@ import numpy as np
 from keras.callbacks import LearningRateScheduler
 from keras.callbacks import ReduceLROnPlateau
 from keras.preprocessing.image import ImageDataGenerator
-from tensorflow import set_random_seed
 from trap_utils import injection_func, init_gpu, CoreModel, craft_trapdoors, CallbackGenerator, load_dataset
 
+import tensorflow
 
 MODEL_PREFIX = "trapdoor_models/"
 DIRECTORY = 'results/'
@@ -71,7 +71,7 @@ def lr_schedule(epoch):
 def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
-    set_random_seed(args.seed)
+    tensorflow.random.set_seed(args.seed)
 
     sess = init_gpu(args.gpu)
     model = CoreModel(args.dataset, load_clean=False)
@@ -102,7 +102,7 @@ def main():
         # data_gen = ImageDataGenerator()
 
 
-        BATCH_SIZE = 512
+        BATCH_SIZE = 32
 
         train_datagen = ImageDataGenerator(rescale=1. / 255)
         test_datagen = ImageDataGenerator(rescale=1. / 255)
