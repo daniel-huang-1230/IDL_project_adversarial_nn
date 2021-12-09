@@ -5,7 +5,7 @@ import keras
 import keras.backend as K
 import numpy as np
 import tensorflow.compat.v1 as tf
-from cleverhans import attacks
+# from cleverhans import attacks
 from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation, Dropout, BatchNormalization
 from keras.models import Model
 from keras.models import Sequential
@@ -340,25 +340,25 @@ def generate_attack(sess, model, test_X, test_Y,  method, target, num_classes, c
 
     batch_size = len(test_X) if batch_size is None else batch_size
 
-    if method == "cw":
-        cwl2 = attacks.CarliniWagnerL2(wrap, sess=sess)
-        adv_x = cwl2.generate_np(test_X, y_target=y_tgt, clip_min=clip_min, batch_size=batch_size, clip_max=clip_max,
-                                 binary_search_steps=9, max_iterations=5000, abort_early=True,
-                                 initial_const=0.001, confidence=confidence, learning_rate=0.01)
+    # if method == "cw":
+    #     cwl2 = attacks.CarliniWagnerL2(wrap, sess=sess)
+    #     adv_x = cwl2.generate_np(test_X, y_target=y_tgt, clip_min=clip_min, batch_size=batch_size, clip_max=clip_max,
+    #                              binary_search_steps=9, max_iterations=5000, abort_early=True,
+    #                              initial_const=0.001, confidence=confidence, learning_rate=0.01)
+    #
+    # elif method == "pgd":
+    #     eps = 8 if not mnist else 8 / 255
+    #     eps_iter = 0.1 if not mnist else 0.1 / 255
+    #     pgd = attacks.ProjectedGradientDescent(wrap, sess=sess)
+    #     adv_x = pgd.generate_np(test_X, y_target=y_tgt, clip_max=clip_max, nb_iter=100, eps=eps,
+    #                             eps_iter=eps_iter, clip_min=clip_min)
+    #
+    # elif method == "en":
+    #     enet = attacks.ElasticNetMethod(wrap, sess=sess)
+    #     adv_x = enet.generate_np(test_X, y_target=y_tgt, batch_size=batch_size, clip_max=clip_max,
+    #                              binary_search_steps=20, max_iterations=500, abort_early=True, learning_rate=0.5)
 
-    elif method == "pgd":
-        eps = 8 if not mnist else 8 / 255
-        eps_iter = 0.1 if not mnist else 0.1 / 255
-        pgd = attacks.ProjectedGradientDescent(wrap, sess=sess)
-        adv_x = pgd.generate_np(test_X, y_target=y_tgt, clip_max=clip_max, nb_iter=100, eps=eps,
-                                eps_iter=eps_iter, clip_min=clip_min)
-
-    elif method == "en":
-        enet = attacks.ElasticNetMethod(wrap, sess=sess)
-        adv_x = enet.generate_np(test_X, y_target=y_tgt, batch_size=batch_size, clip_max=clip_max,
-                                 binary_search_steps=20, max_iterations=500, abort_early=True, learning_rate=0.5)
-
-    elif method == "mgaa":
+    if method == "mgaa":
         # TODO: shape of MGAA adv images is of shape (64, 299, 299, 33)
         adv_x = mgaa_attack.generate_mgaa_adv(max_epsilon=8, num_iter=10, batch_size=batch_size, image_height=224, image_width=224, inputs_batch=test_X, labels_batch=test_Y)
         # adv_x = mgaa_attack.resize_images_np(adv_x_mgaa, (batch_size, 224, 224, 3), 224, 224, False) # restore to original CIFAR dims
