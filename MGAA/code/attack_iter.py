@@ -13,13 +13,13 @@ from scipy.misc import imread
 from scipy.misc import imsave
 from scipy.misc import imresize
 
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 from nets import inception_v3, inception_v4, inception_resnet_v2, resnet_v2
 from nets.mobilenet import mobilenet_v2
 from nets.nasnet import pnasnet
 
-slim = tf.estimator.slim
+slim = tf.contrib.slim
 
 
 tf.flags.DEFINE_string('checkpoint_path', './model', 'Path to checkpoint.')
