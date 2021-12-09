@@ -124,6 +124,8 @@ def eval_defense():
 
     new_model = keras.models.load_model(MODEL_PATH, compile=False)
 
+
+    # TODO update to use data generator for Imagenet
     train_X, train_Y, test_X, test_Y = load_dataset(dataset=args.dataset)
 
     bottleneck_model = build_bottleneck_model(new_model, model.target_layer)

@@ -303,7 +303,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
 
 
             # images = resize_images_np(inputs_batch, batch_shape, image_height, image_width)
-            images = inputs_batch
+            images = inputs_batch  # TODO verify that the input batch is from trapdoor's full Imagenet dataset
             print("images from Trapdoor shape = ", images.shape)
             labels = labels_batch
 
