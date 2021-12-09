@@ -102,7 +102,7 @@ def main():
         # data_gen = ImageDataGenerator()
 
 
-        BATCH_SIZE = 64
+        BATCH_SIZE = 128
 
         train_datagen = ImageDataGenerator(rescale=1. / 255)
         test_datagen = ImageDataGenerator(rescale=1. / 255)
@@ -151,13 +151,13 @@ def main():
 
         print("First Step: Training Normal Model...")
         new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
-                                epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
+                                epochs=model.epochs, verbose=1, callbacks=callbacks, validation_steps=100,
                                 use_multiprocessing=True,
                                 workers=1)
 
         print("Second Step: Injecting Trapdoor...")
         new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
-                                epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
+                                epochs=model.epochs, verbose=1, callbacks=callbacks, validation_steps=100,
                                 use_multiprocessing=True,
                                 workers=1)
 
