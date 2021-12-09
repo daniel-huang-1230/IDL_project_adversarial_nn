@@ -214,9 +214,9 @@ def get_vgg16_model(num_classes=1000):
         classes=num_classes
     )
 
-    # source_model.trainable = False
-    for layer in source_model.layers[:15]:
-        layer.trainable = False
+    source_model.trainable = False
+    # for layer in source_model.layers[:15]:
+    #     layer.trainable = False
 
     print(source_model.summary())
 
