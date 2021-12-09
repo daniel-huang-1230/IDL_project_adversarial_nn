@@ -86,89 +86,91 @@ def main():
     os.makedirs(DIRECTORY, exist_ok=True)
     file_prefix = os.path.join(DIRECTORY, f_name)
 
-    pattern_dict = craft_trapdoors(target_ls, model.img_shape, args.num_cluster,
-                                   pattern_size=args.pattern_size, mask_ratio=args.mask_ratio,
-                                   mnist=1 if args.dataset == 'mnist' or args.dataset == 'cifar' else 0)
 
-    RES = {}
-    RES['target_ls'] = target_ls
-    RES['pattern_dict'] = pattern_dict
+    with sess:
+        pattern_dict = craft_trapdoors(target_ls, model.img_shape, args.num_cluster,
+                                       pattern_size=args.pattern_size, mask_ratio=args.mask_ratio,
+                                       mnist=1 if args.dataset == 'mnist' or args.dataset == 'cifar' else 0)
 
-    # data_gen = ImageDataGenerator()
+        RES = {}
+        RES['target_ls'] = target_ls
+        RES['pattern_dict'] = pattern_dict
+
+        # data_gen = ImageDataGenerator()
 
 
-    BATCH_SIZE = 256
+        BATCH_SIZE = 256
 
-    train_datagen = ImageDataGenerator(rescale=1. / 255)
-    test_datagen = ImageDataGenerator(rescale=1. / 255)
-    train_generator = train_datagen.flow_from_directory(
-        '/home/ec2-user/11785/train',
-        target_size=(224, 224),
-        batch_size=BATCH_SIZE,
-        class_mode='categorical')
-    test_generator = test_datagen.flow_from_directory(
-        '/home/ec2-user/11785/val',
-        target_size=(224, 224),
-        batch_size=BATCH_SIZE,
-        class_mode='categorical')
+        train_datagen = ImageDataGenerator(rescale=1. / 255)
+        test_datagen = ImageDataGenerator(rescale=1. / 255)
+        train_generator = train_datagen.flow_from_directory(
+            '/home/ec2-user/11785/train',
+            target_size=(224, 224),
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')
+        test_generator = test_datagen.flow_from_directory(
+            '/home/ec2-user/11785/val',
+            target_size=(224, 224),
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')
 
-    # X_train, Y_train, X_test, Y_test = load_dataset(args.dataset)
-    # train_generator = data_gen.flow_from_directory(TRAIN_DIR, Y_train, batch_size=32)
-    # number_images = len(X_train)
-    # test_generator = data_gen.flow(X_test, Y_test, batch_size=32)
+        # X_train, Y_train, X_test, Y_test = load_dataset(args.dataset)
+        # train_generator = data_gen.flow_from_directory(TRAIN_DIR, Y_train, batch_size=32)
+        # number_images = len(X_train)
+        # test_generator = data_gen.flow(X_test, Y_test, batch_size=32)
 
-    new_model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=lr_schedule(0)),
-                      metrics=['accuracy'])
-    lr_scheduler = LearningRateScheduler(lr_schedule)
+        new_model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=lr_schedule(0)),
+                          metrics=['accuracy'])
+        lr_scheduler = LearningRateScheduler(lr_schedule)
 
-    lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
-                                   cooldown=0,
-                                   patience=5,
-                                   min_lr=0.5e-6)
+        lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
+                                       cooldown=0,
+                                       patience=5,
+                                       min_lr=0.5e-6)
 
-    base_gen = DataGenerator(target_ls, pattern_dict, model.num_classes)
-    test_adv_gen = base_gen.generate_data(test_generator, 1)
-    test_nor_gen = base_gen.generate_data(test_generator, 0)
-    clean_train_gen = base_gen.generate_data(train_generator, 0)
-    trap_train_gen = base_gen.generate_data(train_generator, INJECT_RATIO)
+        base_gen = DataGenerator(target_ls, pattern_dict, model.num_classes)
+        test_adv_gen = base_gen.generate_data(test_generator, 1)
+        test_nor_gen = base_gen.generate_data(test_generator, 0)
+        clean_train_gen = base_gen.generate_data(train_generator, 0)
+        trap_train_gen = base_gen.generate_data(train_generator, INJECT_RATIO)
 
-    os.makedirs(MODEL_PREFIX, exist_ok=True)
-    os.makedirs(DIRECTORY, exist_ok=True)
+        os.makedirs(MODEL_PREFIX, exist_ok=True)
+        os.makedirs(DIRECTORY, exist_ok=True)
 
-    model_file = MODEL_PREFIX + f_name + "_model.h5"
-    RES["model_file"] = model_file
+        model_file = MODEL_PREFIX + f_name + "_model.h5"
+        RES["model_file"] = model_file
 
-    if os.path.exists(model_file):
-        os.remove(model_file)
+        if os.path.exists(model_file):
+            os.remove(model_file)
 
-    cb = CallbackGenerator(test_nor_gen, test_adv_gen, model_file=model_file, expected_acc=model.expect_acc)
-    callbacks = [lr_reducer, lr_scheduler, cb]
+        cb = CallbackGenerator(test_nor_gen, test_adv_gen, model_file=model_file, expected_acc=model.expect_acc)
+        callbacks = [lr_reducer, lr_scheduler, cb]
 
-    print("First Step: Training Normal Model...")
-    new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
-                            epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
-                            use_multiprocessing=True,
-                            workers=1)
+        print("First Step: Training Normal Model...")
+        new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
+                                epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
+                                use_multiprocessing=True,
+                                workers=1)
 
-    print("Second Step: Injecting Trapdoor...")
-    new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
-                            epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
-                            use_multiprocessing=True,
-                            workers=1)
+        print("Second Step: Injecting Trapdoor...")
+        new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
+                                epochs=model.epochs, verbose=2, callbacks=callbacks, validation_steps=100,
+                                use_multiprocessing=True,
+                                workers=1)
 
-    if not os.path.exists(model_file):
-        raise Exception("NO GOOD MODEL!!!")
+        if not os.path.exists(model_file):
+            raise Exception("NO GOOD MODEL!!!")
 
-    # new_model = keras.models.load_model(model_file)
-    loss, acc = new_model.evaluate_generator(test_nor_gen, verbose=0, steps=100)
+        # new_model = keras.models.load_model(model_file)
+        loss, acc = new_model.evaluate_generator(test_nor_gen, verbose=0, steps=100)
 
-    RES["normal_acc"] = acc
-    loss, backdoor_acc = new_model.evaluate_generator(test_adv_gen, steps=200, verbose=0)
-    RES["trapdoor_acc"] = backdoor_acc
+        RES["normal_acc"] = acc
+        loss, backdoor_acc = new_model.evaluate_generator(test_adv_gen, steps=200, verbose=0)
+        RES["trapdoor_acc"] = backdoor_acc
 
-    file_save_path = file_prefix + "_res.p"
-    pickle.dump(RES, open(file_save_path, 'wb'))
-    print("File saved to {}, use this path as protected-path for the eval script. ".format(file_save_path))
+        file_save_path = file_prefix + "_res.p"
+        pickle.dump(RES, open(file_save_path, 'wb'))
+        print("File saved to {}, use this path as protected-path for the eval script. ".format(file_save_path))
 
 
 def parse_arguments(argv):
