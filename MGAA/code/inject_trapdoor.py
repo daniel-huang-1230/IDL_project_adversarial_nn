@@ -99,12 +99,12 @@ def main():
     train_datagen = ImageDataGenerator(rescale=1. / 255)
     test_datagen = ImageDataGenerator(rescale=1. / 255)
     train_generator = train_datagen.flow_from_directory(
-        '/content/drive/MyDrive/11785_baseline_model/train',
+        '/home/ec2-user/11785/train',
         target_size=(224, 224),
         batch_size=32,
         class_mode='categorical')
     test_generator = test_datagen.flow_from_directory(
-        '/content/drive/MyDrive/11785_baseline_model/val',
+        '/home/ec2-user/11785/val',
         target_size=(224, 224),
         batch_size=32,
         class_mode='categorical')
