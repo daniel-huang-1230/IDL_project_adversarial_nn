@@ -4,7 +4,7 @@ import random
 import keras
 import keras.backend as K
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from cleverhans import attacks
 from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation, Dropout, BatchNormalization
 from keras.models import Model
