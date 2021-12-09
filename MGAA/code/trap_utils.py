@@ -251,7 +251,7 @@ def get_vgg16_model(num_classes=1000):
     y = Dropout(.5)(y)
     y = Dense(1024, activation='relu')(y)
     y = Dropout(.5)(y)
-    y = Dense(1)(y)
+    y = Dense(num_classes)(y)
 
     model = Model(input=x, output=y)
     # model.compile(optimizer=Adam(lr=1e-4), loss='mse')
