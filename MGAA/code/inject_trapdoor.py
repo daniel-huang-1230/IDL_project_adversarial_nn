@@ -12,6 +12,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from tensorflow import set_random_seed
 from trap_utils import injection_func, init_gpu, CoreModel, craft_trapdoors, CallbackGenerator, load_dataset
 
+
 MODEL_PREFIX = "trapdoor_models/"
 DIRECTORY = 'results/'
 
@@ -89,8 +90,7 @@ def main():
 
     with sess:
 
-        devices = sess.list_devices()
-        print(devices)
+
         pattern_dict = craft_trapdoors(target_ls, model.img_shape, args.num_cluster,
                                        pattern_size=args.pattern_size, mask_ratio=args.mask_ratio,
                                        mnist=1 if args.dataset == 'mnist' or args.dataset == 'cifar' else 0)
@@ -102,7 +102,7 @@ def main():
         # data_gen = ImageDataGenerator()
 
 
-        BATCH_SIZE = 256
+        BATCH_SIZE = 512
 
         train_datagen = ImageDataGenerator(rescale=1. / 255)
         test_datagen = ImageDataGenerator(rescale=1. / 255)

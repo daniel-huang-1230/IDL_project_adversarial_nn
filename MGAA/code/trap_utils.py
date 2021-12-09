@@ -34,7 +34,8 @@ def fix_gpu_memory(mem_fraction=1):
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=mem_fraction)
         tf_config = tf.ConfigProto(gpu_options=gpu_options)
         tf_config.gpu_options.allow_growth = True
-        tf_config.log_device_placement = False
+        tf_config.log_device_placement = True
+        print("gpu available!")
     init_op = tf.global_variables_initializer()
     sess = tf.Session(config=tf_config)
     sess.run(init_op)
