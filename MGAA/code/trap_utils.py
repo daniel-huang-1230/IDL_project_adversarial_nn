@@ -203,7 +203,7 @@ def get_xception_model(num_classes=1000):
 
 def get_resnet50_model(num_classes=1000):
     inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
-    baseModel = keras.applications.ResNet50(weights="imagenet", include_top=False)
+    baseModel = keras.applications.ResNet50(weights="imagenet", include_top=False, pooling='avg')
 
     baseModel.trainable = False
 
