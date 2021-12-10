@@ -94,7 +94,7 @@ class CoreModel(object):
             target_layer = 'dense'
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
-            epochs = 10 #
+            epochs = 10
         else:
             raise Exception("Not implement")
 
