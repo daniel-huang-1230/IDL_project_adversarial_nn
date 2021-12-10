@@ -62,9 +62,9 @@ class CoreModel(object):
     def __init__(self, dataset, load_clean=False, load_model=True):
         self.dataset = dataset
         if load_model:
-            # self.model = get_vgg16_model()
+            self.model = get_vgg16_model()
             # self.model = get_xception_model()
-            self.model = get_resnet50_model()
+            # self.model = get_resnet50_model()
         else:
             self.model = None
         if dataset == "cifar":
