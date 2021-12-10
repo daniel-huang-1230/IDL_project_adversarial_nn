@@ -13,7 +13,7 @@ from keras.regularizers import l2
 from sklearn.metrics.pairwise import paired_cosine_distances
 
 from keras.applications.inception_v3 import inception_v3
-from keras.applications.inception_v3 import preprocess_input, decode_predictions
+from keras.applications.resnet50 import preprocess_input
 import attack_iter as mgaa_attack
 import tensorflow_datasets as tfds
 from keras.preprocessing import image
@@ -209,6 +209,7 @@ def get_resnet50_model(num_classes=1000):
 
     print(baseModel.summary())
 
+    inp = preprocess_input(inp)
     x = baseModel(inp)
     x = AveragePooling2D(pool_size=(7, 7))(x)
     x = Flatten(name="flatten")(x)
