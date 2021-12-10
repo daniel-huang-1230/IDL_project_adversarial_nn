@@ -197,6 +197,7 @@ def get_xception_model():
     outputs = keras.layers.Dense(1)(x)
     model = keras.Model(inputs, outputs)
 
+    print(model.summary())
     model.compile(optimizer=keras.optimizers.Adam(),
                   loss=keras.losses.BinaryCrossentropy(from_logits=True),
                   metrics=[keras.metrics.BinaryAccuracy()])
