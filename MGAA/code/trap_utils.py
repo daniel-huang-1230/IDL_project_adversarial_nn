@@ -62,8 +62,8 @@ class CoreModel(object):
     def __init__(self, dataset, load_clean=False, load_model=True):
         self.dataset = dataset
         if load_model:
-            self.model = get_vgg16_model()
-            # self.model = get_xception_model()
+            # self.model = get_vgg16_model()
+            self.model = get_xception_model()
         else:
             self.model = None
         if dataset == "cifar":
@@ -90,7 +90,7 @@ class CoreModel(object):
             num_classes = 1000
             img_shape = (224, 224, 3) # No downsampled imagenet
             per_label_ratio = 0.1
-            expect_acc = 0.6
+            expect_acc = 0.5
             target_layer = 'dense'
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
@@ -181,12 +181,12 @@ def get_mnist_model(input_shape=(28, 28, 1),
 def get_xception_model():
     base_model = keras.applications.Xception(
         weights='imagenet',  # Load weights pre-trained on ImageNet.
-        input_shape=(64, 64, 3),
+        input_shape=(224, 224, 3),
         include_top=False)
 
     base_model.trainable = False
 
-    inputs = keras.Input(shape=(64, 64, 3))
+    inputs = keras.Input(shape=(224, 224, 3))
     # We make sure that the base_model is running in inference mode here,
     # by passing `training=False`. This is important for fine-tuning, as you will
     # learn in a few paragraphs.
