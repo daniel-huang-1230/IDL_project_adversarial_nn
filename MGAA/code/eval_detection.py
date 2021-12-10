@@ -17,6 +17,39 @@ random.seed(1234)
 np.random.seed(1234)
 set_random_seed(1234)
 
+class DataGenerator(object):
+    def __init__(self, target_ls, pattern_dict, num_classes):
+        self.target_ls = target_ls
+        self.pattern_dict = pattern_dict
+        self.num_classes = num_classes
+
+    def mask_pattern_func(self, y_target):
+        mask, pattern = random.choice(self.pattern_dict[y_target])
+        mask = np.copy(mask)
+
+        return mask, pattern
+
+    def infect_X(self, img, tgt):
+        mask, pattern = self.mask_pattern_func(tgt)
+        raw_img = np.copy(img)
+        adv_img = np.copy(raw_img)
+
+        adv_img = injection_func(mask, pattern, adv_img)
+        return adv_img, keras.utils.to_categorical(tgt, num_classes=self.num_classes)
+
+    def generate_data(self, gen, target):
+        while 1:
+            X, Y = next(gen)
+            remain_idx = np.argmax(Y, axis=1) != target
+            sub_X = X_filter[remain_idx]
+            sub_Y = Y_filter[remain_idx]
+            
+            sub_X, sub_Y = shuffle(sub_X, sub_Y)
+            sub_X = sub_X[:64]
+            sub_Y = sub_Y[:64]
+
+            yield np.array(X), np.array(Y), np.array(X_filter), np.array(Y_filter)
+
 
 def neuron_extractor(all_model_layers, x_input):
     vector = []
@@ -99,8 +132,8 @@ def infect_X(img, tgt, num_classes, pattern_dict):
 
 
 def eval_trapdoor(model, test_X, test_Y, y_target, pattern_dict, num_classes):
-    cur_test_X = np.array([infect_X(img, y_target, num_classes, pattern_dict)[0] for img in np.copy(test_X)])
-    trapdoor_succ = np.mean(np.argmax(model.predict(cur_test_X), axis=1) == y_target)
+#     cur_test_X = np.array([infect_X(img, y_target, num_classes, pattern_dict)[0] for img in np.copy(test_X)])
+    trapdoor_succ = np.mean(np.argmax(model.predict_generator(test_X), axis=1) == y_target)
     return trapdoor_succ
 
 
@@ -124,30 +157,44 @@ def eval_defense():
 
     new_model = keras.models.load_model(MODEL_PATH, compile=False)
 
-
     # TODO update to use data generator for Imagenet
-    train_X, train_Y, test_X, test_Y = load_dataset(dataset=args.dataset)
+    # train_X, train_Y, test_X, test_Y = load_dataset(dataset=args.dataset)
+    train_datagen = ImageDataGenerator(rescale=1. / 255)
+    test_datagen = ImageDataGenerator(rescale=1. / 255)
+    train_generator = train_datagen.flow_from_directory(
+            '/home/ec2-user/11785/train',
+            target_size=(224, 224),
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')
+    test_generator = test_datagen.flow_from_directory(
+            '/home/ec2-user/11785/val',
+            target_size=(224, 224),
+            batch_size=BATCH_SIZE,
+            class_mode='categorical')
+    base_gen = DataGenerator(target_ls, pattern_dict, model.num_classes)
 
     bottleneck_model = build_bottleneck_model(new_model, model.target_layer)
 
-    train_X, train_Y = shuffle(train_X, train_Y)
-    selected_X = train_X
-    selected_Y = train_Y
+#     train_X, train_Y = shuffle(train_X, train_Y)
+#     selected_X = train_X
+#     selected_Y = train_Y
 
-    test_X, test_Y = shuffle(test_X, test_Y)
-    test_X = test_X[:1000]
-    test_Y = test_Y[:1000]
+#     test_X, test_Y = shuffle(test_X, test_Y)
+#     test_X = test_X[:1000]
+#     test_Y = test_Y[:1000]
     print("Randomly Select 3 Target Label for Evaluations: ")
     for y_target in random.sample(target_ls, 3):
+    
+        train_X_gen, train_Y, _, _ = base_gen.generate_data(train_generator, y_target)
+        test_X_gen, test_Y, sub_X, sub_Y = base_gen.generate_data(test_generator, y_target)
+        
         RES[y_target] = {}
-        trapdoor_succ = eval_trapdoor(new_model, test_X, test_Y, y_target, num_classes=model.num_classes,
+        # bottleneck model?
+        trapdoor_succ = eval_trapdoor(new_model, test_X_gen, test_Y, y_target, num_classes=model.num_classes,
                                       pattern_dict=pattern_dict)
 
         print("Target: {} - Trapdoor Succ: {}".format(y_target, trapdoor_succ))
-        sub_X, sub_Y = get_other_label_data(test_X, test_Y, y_target)
-        sub_X, sub_Y = shuffle(sub_X, sub_Y)
-        sub_X = sub_X[:64]
-        sub_Y = sub_Y[:64]
+#         sub_X, sub_Y = get_other_label_data(test_X, test_Y, y_target)
 
         for attack in ATTACK:
             clip_max = 1 if args.dataset == "mnist" else 255
@@ -168,7 +215,8 @@ def eval_defense():
             adv_x = adv_x[succ_idx]
             succ_sub_X = sub_X[succ_idx]
 
-            fnr_ls, roc_data, normal_scores, adv_scores = eval_filter_pattern(bottleneck_model, selected_X, selected_Y,
+            fnr_ls, roc_data, normal_scores, adv_scores = 
+            filter_pattern(bottleneck_model, selected_X, selected_Y,
                                                                               succ_sub_X, adv_x,
                                                                               y_target, pattern_dict=pattern_dict,
                                                                               num_classes=model.num_classes,
