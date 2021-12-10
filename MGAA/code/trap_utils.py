@@ -6,7 +6,7 @@ import keras.backend as K
 import numpy as np
 import tensorflow as tf
 from cleverhans import attacks
-from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation, Dropout, BatchNormalization
+from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Activation, Dropout, BatchNormalization, AveragePooling2D
 from keras.models import Model
 from keras.models import Sequential
 from keras.regularizers import l2
@@ -63,7 +63,8 @@ class CoreModel(object):
         self.dataset = dataset
         if load_model:
             # self.model = get_vgg16_model()
-            self.model = get_xception_model()
+            # self.model = get_xception_model()
+            self.model = get_resnet50_model()
         else:
             self.model = None
         if dataset == "cifar":
@@ -196,6 +197,25 @@ def get_xception_model(num_classes=1000):
     # A Dense classifier with a single unit (binary classification)
     outputs = keras.layers.Dense(num_classes)(x)
     model = keras.Model(inputs, outputs)
+
+    print(model.summary())
+    return model
+
+def get_resnet50_model(num_classes=1000):
+    inp = keras.layers.Input(shape=(224, 224, 3), name='image_input')
+    baseModel = keras.applications.ResNet50(weights="imagenet", include_top=False)
+
+    baseModel.trainable = False
+
+    print(baseModel.summary())
+
+    x = baseModel(inp)
+    x = AveragePooling2D(pool_size=(7, 7))(x)
+    x = Flatten(name="flatten")(x)
+    x = Dense(256, activation="relu")(x)
+    x = Dropout(0.5)(x)
+    out = Dense(num_classes, activation="softmax")(x)
+    model = Model(inputs=inp, outputs=out)
 
     print(model.summary())
     return model
