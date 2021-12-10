@@ -149,11 +149,11 @@ def main():
         cb = CallbackGenerator(test_nor_gen, test_adv_gen, model_file=model_file, expected_acc=model.expect_acc)
         callbacks = [lr_reducer, lr_scheduler, cb]
 
-        print("First Step: Training Normal Model...")
-        new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
-                                epochs=model.epochs, verbose=1, callbacks=callbacks, validation_steps=100,
-                                use_multiprocessing=True,
-                                workers=1)
+        # print("First Step: Training Normal Model...")
+        # new_model.fit_generator(clean_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
+        #                         epochs=model.epochs, verbose=1, callbacks=callbacks, validation_steps=100,
+        #                         use_multiprocessing=True,
+        #                         workers=1)
 
         print("Second Step: Injecting Trapdoor...")
         new_model.fit_generator(trap_train_gen, validation_data=test_nor_gen, steps_per_epoch=1281167 // BATCH_SIZE,
