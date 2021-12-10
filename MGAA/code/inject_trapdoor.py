@@ -102,7 +102,7 @@ def main():
         # data_gen = ImageDataGenerator()
 
 
-        BATCH_SIZE = 64
+        BATCH_SIZE = 128
 
         train_datagen = ImageDataGenerator(rescale=1. / 255)
         test_datagen = ImageDataGenerator(rescale=1. / 255)

@@ -190,7 +190,7 @@ def get_xception_model():
     # We make sure that the base_model is running in inference mode here,
     # by passing `training=False`. This is important for fine-tuning, as you will
     # learn in a few paragraphs.
-    x = base_model(inputs, training=False)
+    x = base_model(inputs)
     # Convert features of shape `base_model.output_shape[1:]` to vectors
     x = keras.layers.GlobalAveragePooling2D()(x)
     # A Dense classifier with a single unit (binary classification)
