@@ -210,7 +210,7 @@ def get_resnet50_model(num_classes=1000):
     print(baseModel.summary())
 
     x = baseModel(inp)
-    x = AveragePooling2D(pool_size=(7, 7))(x)
+    # x = AveragePooling2D(pool_size=(7, 7))(x)
     x = Flatten(name="flatten")(x)
     x = Dense(4096, activation="relu")(x)
     x = Dropout(0.5)(x)
