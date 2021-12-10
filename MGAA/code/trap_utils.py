@@ -365,7 +365,8 @@ class CallbackGenerator(keras.callbacks.Callback):
         _, attack_acc = self.model.evaluate_generator(self.adv_gen, steps=100, verbose=0)
 
         print("Epoch: {} - Clean Acc {:.4f} - Trapdoor Acc {:.4f}".format(epoch, clean_acc, attack_acc))
-        if clean_acc > self.expected_acc and attack_acc > self.best_attack and attack_acc > 0.9:
+        # if clean_acc > self.expected_acc and attack_acc > self.best_attack and attack_acc > 0.9:
+        if attack_acc > self.best_attack and attack_acc > 0.9:
             if self.model_file:
                 self.model.save(self.model_file)
             self.best_attack = attack_acc

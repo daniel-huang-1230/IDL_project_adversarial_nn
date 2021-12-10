@@ -171,6 +171,7 @@ def main():
         loss, backdoor_acc = new_model.evaluate_generator(test_adv_gen, steps=200, verbose=0)
         RES["trapdoor_acc"] = backdoor_acc
 
+        print(RES)
         file_save_path = file_prefix + "_res.p"
         pickle.dump(RES, open(file_save_path, 'wb'))
         print("File saved to {}, use this path as protected-path for the eval script. ".format(file_save_path))
