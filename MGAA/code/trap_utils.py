@@ -178,7 +178,7 @@ def get_mnist_model(input_shape=(28, 28, 1),
     return model
 
 
-def get_xception_model():
+def get_xception_model(num_classes=1000):
     base_model = keras.applications.Xception(
         weights='imagenet',  # Load weights pre-trained on ImageNet.
         input_shape=(224, 224, 3),
@@ -194,13 +194,10 @@ def get_xception_model():
     # Convert features of shape `base_model.output_shape[1:]` to vectors
     x = keras.layers.GlobalAveragePooling2D()(x)
     # A Dense classifier with a single unit (binary classification)
-    outputs = keras.layers.Dense(1)(x)
+    outputs = keras.layers.Dense(num_classes)(x)
     model = keras.Model(inputs, outputs)
 
     print(model.summary())
-    model.compile(optimizer=keras.optimizers.Adam(),
-                  loss=keras.losses.BinaryCrossentropy(from_logits=True),
-                  metrics=[keras.metrics.BinaryAccuracy()])
     return model
 
 def get_vgg16_model(num_classes=1000):
@@ -231,10 +228,10 @@ def get_vgg16_model(num_classes=1000):
     model = Model(inputs=inp, outputs=out)
 
     print(model.summary())
-
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='Adam',
-                  metrics=['accuracy'])
+    #
+    # model.compile(loss='categorical_crossentropy',
+    #               optimizer='Adam',
+    #               metrics=['accuracy'])
     return model
 
     # input_shape =(224, 224, 3)
