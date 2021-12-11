@@ -42,10 +42,9 @@ class DataGenerator(object):
         return adv_img, keras.utils.to_categorical(tgt, num_classes=self.num_classes)
 
     def generate_data(self, gen):
-        while 1:
-            batch_X, batch_Y = next(gen)
+        batch_X, batch_Y = next(gen)
 
-            yield np.array(batch_X), np.array(batch_Y)
+        return np.array(batch_X), np.array(batch_Y)
 
 
 def neuron_extractor(all_model_layers, x_input):
