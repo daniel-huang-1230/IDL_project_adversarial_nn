@@ -223,8 +223,7 @@ def eval_defense():
             adv_x = adv_x[succ_idx]
             succ_sub_X = sub_X[succ_idx]
 
-            fnr_ls, roc_data, normal_scores, adv_scores =
-            eval_filter_pattern(bottleneck_model, selected_X, selected_Y,
+            fnr_ls, roc_data, normal_scores, adv_scores = eval_filter_pattern(bottleneck_model, selected_X, selected_Y,
                           succ_sub_X, adv_x,
                           y_target, pattern_dict=pattern_dict,
                           num_classes=model.num_classes,
