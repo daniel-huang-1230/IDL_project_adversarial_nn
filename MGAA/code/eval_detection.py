@@ -41,18 +41,11 @@ class DataGenerator(object):
         adv_img = injection_func(mask, pattern, adv_img)
         return adv_img, keras.utils.to_categorical(tgt, num_classes=self.num_classes)
 
-    def generate_data(self, gen, target):
+    def generate_data(self, gen):
         while 1:
-            X, Y = next(gen)
-            X_filter = np.array(X)
-            Y_filter = np.array(Y)
-            remain_idx = np.argmax(Y, axis=1) != target
-            sub_X = X_filter[remain_idx]
-            sub_Y = Y_filter[remain_idx]
+            batch_X, batch_Y = next(gen)
 
-            sub_X, sub_Y = shuffle(sub_X, sub_Y)
-
-            yield np.array(sub_X), np.array(sub_X), np.array(X_filter), np.array(Y_filter)
+            yield np.array(batch_X), np.array(batch_Y)
 
 
 def neuron_extractor(all_model_layers, x_input):
@@ -191,8 +184,8 @@ def eval_defense():
     print("Randomly Select 100 Target Label for Evaluations: ")
     for y_target in random.sample(target_ls, 100):
     
-        train_X, train_Y, _, _ = base_gen.generate_data(train_generator, y_target)
-        test_X, test_Y, sub_X, sub_Y = base_gen.generate_data(test_generator, y_target)
+        train_X, train_Y = base_gen.generate_data(train_generator)
+        test_X, test_Y = base_gen.generate_data(test_generator)
         selected_X = train_X
         selected_Y = train_Y
 
@@ -202,7 +195,7 @@ def eval_defense():
                                       pattern_dict=pattern_dict)
 
         print("Target: {} - Trapdoor Succ: {}".format(y_target, trapdoor_succ))
-#         sub_X, sub_Y = get_other_label_data(test_X, test_Y, y_target)
+        sub_X, sub_Y = get_other_label_data(test_X, test_Y, y_target)
 
         for attack in ATTACK:
             clip_max = 1 if args.dataset == "mnist" else 255
