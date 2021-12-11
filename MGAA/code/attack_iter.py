@@ -262,8 +262,8 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
         grad_input = tf.placeholder(tf.float32, shape=batch_shape)
         num_iter_input = tf.placeholder(tf.int32)
         alpha_input = tf.placeholder(tf.float32, shape=())
-        labels_input = tf.placeholder(tf.int32, shape=[batch_size])
-        y = tf.one_hot(labels_input, num_classes)
+        labels_input = tf.placeholder(tf.int32, shape=[batch_size, num_classes])
+        # y = tf.one_hot(labels_input, num_classes)
 
         x_max = tf.clip_by_value(x_input + eps, -1.0, 1.0)
         x_min = tf.clip_by_value(x_input - eps, -1.0, 1.0)
@@ -307,6 +307,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
             print("images from Trapdoor shape = ", images.shape)
             labels = labels_batch
 
+            print("labels (batch) from Trapdoor shape = ", labels.shape)
             adv_images = images.copy()
             grad_images = np.zeros(batch_shape)
             for i in range(num_iter):
