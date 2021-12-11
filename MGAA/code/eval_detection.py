@@ -206,6 +206,10 @@ def eval_defense():
             print("trapdoor adv x shape = ", adv_x.shape)
 
             succ_idx = np.argmax(new_model.predict(adv_x), axis=1) == y_target
+
+            print("print out succ_idx and y_target")
+            print(succ_idx)
+            print(y_target)
             attack_succ = np.mean(succ_idx)
             print("ATTACK: {}, Attack Success: {:.4f}".format(attack, attack_succ))
             if attack_succ < 0.05:
