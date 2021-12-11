@@ -180,8 +180,9 @@ def eval_defense():
 #     test_X, test_Y = shuffle(test_X, test_Y)
 #     test_X = test_X[:1000]
 #     test_Y = test_Y[:1000]
-    print("Randomly Select 100 Target Label for Evaluations: ")
-    for y_target in random.sample(target_ls, 500):
+    num_target = 1000
+    print("Randomly Select {} Target Label for Evaluations: ".format(num_target))
+    for y_target in random.sample(target_ls, 1000):
     
         train_X, train_Y = base_gen.generate_data(train_generator)
         test_X, test_Y = base_gen.generate_data(test_generator)
