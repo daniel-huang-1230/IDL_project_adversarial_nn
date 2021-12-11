@@ -135,7 +135,7 @@ def eval_trapdoor(model, test_X, test_Y, y_target, pattern_dict, num_classes):
 
 
 def eval_defense():
-    BATCH_SIZE = 64
+    BATCH_SIZE = 8
 
     MODEL_PATH = "trapdoor_models/{}_model.h5".format(args.dataset)
     RES_PATH = "results/{}_res.p".format(args.dataset)
