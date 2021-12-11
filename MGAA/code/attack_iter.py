@@ -270,7 +270,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
 
         i = tf.constant(0)
         x_adv, _, _, _, _, _, _, _, _, grad_adv = tf.while_loop(stop, graph,
-                                                                [x_input, y, i, num_iter_input, alpha_input, x_max,
+                                                                [x_input, labels_input, i, num_iter_input, alpha_input, x_max,
                                                                  x_min, beta_input, beta_input_, grad_input])
 
         # Run computation
