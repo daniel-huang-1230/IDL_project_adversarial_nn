@@ -92,7 +92,7 @@ class CoreModel(object):
             img_shape = (224, 224, 3) # No downsampled imagenet
             per_label_ratio = 0.1
             expect_acc = 0.5
-            target_layer = 'dense'
+            target_layer = 'Dense'
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
             epochs = 10
