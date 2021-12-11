@@ -306,7 +306,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
             images = inputs_batch  # TODO verify that the input batch is from trapdoor's full Imagenet dataset
             print("images from Trapdoor shape = ", images.shape)
             labels = np.hstack((labels_batch, np.zeros((batch_size, 1))))
-
+            labels = labels + 1
 
             print("labels (batch) from Trapdoor shape = ", labels.shape)
             # print(labels_batch)
