@@ -310,7 +310,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
             adv_images = images.copy()
             grad_images = np.zeros(batch_shape)
             for i in range(num_iter):
-                train_index = random.sample(range(10), 66)
+                train_index = random.sample(range(10), 6)
                 test_index = train_index.pop()
 
                 # meta train step
