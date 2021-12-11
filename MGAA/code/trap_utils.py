@@ -92,7 +92,7 @@ class CoreModel(object):
             img_shape = (224, 224, 3) # No downsampled imagenet
             per_label_ratio = 0.1
             expect_acc = 0.5
-            target_layer = 'Dense'
+            target_layer = 'dense_3' # TODO hard-coded for VGG16
             mask_ratio = 0.1
             pattern_size = 3 # TODO tune?
             epochs = 10
