@@ -241,7 +241,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
 
 
     eps = 2.0 * max_epsilon / 255.0
-    num_classes = 10
+    num_classes = 1000
     batch_shape = [batch_size, image_height, image_width, 3]
 
     # Logger
@@ -308,6 +308,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
             labels = labels_batch
 
             print("labels (batch) from Trapdoor shape = ", labels.shape)
+            print(labels_batch)
             adv_images = images.copy()
             grad_images = np.zeros(batch_shape)
             for i in range(num_iter):
