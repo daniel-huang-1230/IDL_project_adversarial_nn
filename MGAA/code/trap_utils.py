@@ -283,6 +283,7 @@ def get_vgg16_model(num_classes=1000):
     # return model
 
 
+# NOT USED ANYMORE
 def load_dataset(dataset):
     if dataset == "cifar":
         from keras.datasets import cifar10

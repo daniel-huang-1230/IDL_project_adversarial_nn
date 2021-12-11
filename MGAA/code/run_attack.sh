@@ -21,11 +21,11 @@ python attack_iter.py \
   --momentum=1.0 \
   --prob=0.7 \
   --exp_name="${EXP_NAME}"\
-  --batch_size=5
-
-python simple_eval.py \
-  --checkpoint_path="${CHECKPOINT_PATH}" \
-  --input_dir="${INPUT_DIR}" \
-  --output_dir="${OUTPUT_DIR}" \
-  --exp_name="${EXP_NAME}"
+  --batch_size=3
+#
+#python simple_eval.py \
+#  --checkpoint_path="${CHECKPOINT_PATH}" \
+#  --input_dir="${INPUT_DIR}" \
+#  --output_dir="${OUTPUT_DIR}" \
+#  --exp_name="${EXP_NAME}"
 

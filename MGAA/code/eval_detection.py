@@ -7,15 +7,19 @@ import keras
 import keras.backend as K
 import numpy as np
 from sklearn.utils import shuffle
+from keras.preprocessing.image import ImageDataGenerator
 from tensorflow import set_random_seed
 from trap_utils import test_neuron_cosine_sim, init_gpu, preprocess, CoreModel, build_bottleneck_model, load_dataset, \
     get_other_label_data, cal_roc, injection_func, generate_attack
+
 
 K.set_learning_phase(0)
 
 random.seed(1234)
 np.random.seed(1234)
 set_random_seed(1234)
+
+
 
 class DataGenerator(object):
     def __init__(self, target_ls, pattern_dict, num_classes):
@@ -40,15 +44,15 @@ class DataGenerator(object):
     def generate_data(self, gen, target):
         while 1:
             X, Y = next(gen)
+            X_filter = np.array(X)
+            Y_filter = np.array(Y)
             remain_idx = np.argmax(Y, axis=1) != target
             sub_X = X_filter[remain_idx]
             sub_Y = Y_filter[remain_idx]
-            
-            sub_X, sub_Y = shuffle(sub_X, sub_Y)
-            sub_X = sub_X[:64]
-            sub_Y = sub_Y[:64]
 
-            yield np.array(X), np.array(Y), np.array(X_filter), np.array(Y_filter)
+            sub_X, sub_Y = shuffle(sub_X, sub_Y)
+
+            yield np.array(sub_X), np.array(sub_X), np.array(X_filter), np.array(Y_filter)
 
 
 def neuron_extractor(all_model_layers, x_input):
@@ -63,15 +67,16 @@ def neuron_extractor(all_model_layers, x_input):
 
 def eval_filter_pattern(bottleneck_model, X_train, Y_train, X_test, X_adv_raw, y_target, pattern_dict, num_classes,
                         filter_ratio=1.0):
-    def build_neuron_signature(bottleneck_model, X, Y, y_target):
+    def build_neuron_signature(bottleneck_model, X, y_target):
         X_adv = np.array(
-            [infect_X(img, y_target, pattern_dict=pattern_dict, num_classes=num_classes)[0] for img in np.copy(X)])
+            [infect_X(img, y_target, pattern_dict=pattern_dict, num_classes=num_classes)[0] for img in X])
         X_neuron_adv = bottleneck_model.predict(X_adv)
         X_neuron_adv = np.mean(X_neuron_adv, axis=0)
         sig = X_neuron_adv
         return sig
 
-    adv_sig = build_neuron_signature(bottleneck_model, X_train, Y_train, y_target)
+
+    adv_sig = build_neuron_signature(bottleneck_model, X_train, Y_train)
     X = np.array(X_test)
     X_adv = preprocess(X_adv_raw, method="raw")
     X_neuron = bottleneck_model.predict(X)
@@ -132,13 +137,14 @@ def infect_X(img, tgt, num_classes, pattern_dict):
 
 
 def eval_trapdoor(model, test_X, test_Y, y_target, pattern_dict, num_classes):
-#     cur_test_X = np.array([infect_X(img, y_target, num_classes, pattern_dict)[0] for img in np.copy(test_X)])
-    trapdoor_succ = np.mean(np.argmax(model.predict_generator(test_X), axis=1) == y_target)
+    cur_test_X = np.array([infect_X(img, y_target, num_classes, pattern_dict)[0] for img in np.copy(test_X)])
+    trapdoor_succ = np.mean(np.argmax(model.predict(cur_test_X), axis=1) == y_target)
     return trapdoor_succ
 
 
 def eval_defense():
-    MODEL_PATH = "trapdoor_models/{}_model.h5".format(args.dataset)
+    BATCH_SIZE = 64
+
     MODEL_PATH = "trapdoor_models/{}_model.h5".format(args.dataset)
     RES_PATH = "results/{}_res.p".format(args.dataset)
 
@@ -182,15 +188,17 @@ def eval_defense():
 #     test_X, test_Y = shuffle(test_X, test_Y)
 #     test_X = test_X[:1000]
 #     test_Y = test_Y[:1000]
-    print("Randomly Select 3 Target Label for Evaluations: ")
-    for y_target in random.sample(target_ls, 3):
+    print("Randomly Select 100 Target Label for Evaluations: ")
+    for y_target in random.sample(target_ls, 100):
     
-        train_X_gen, train_Y, _, _ = base_gen.generate_data(train_generator, y_target)
-        test_X_gen, test_Y, sub_X, sub_Y = base_gen.generate_data(test_generator, y_target)
-        
+        train_X, train_Y, _, _ = base_gen.generate_data(train_generator, y_target)
+        test_X, test_Y, sub_X, sub_Y = base_gen.generate_data(test_generator, y_target)
+        selected_X = train_X
+        selected_Y = train_Y
+
         RES[y_target] = {}
         # bottleneck model?
-        trapdoor_succ = eval_trapdoor(new_model, test_X_gen, test_Y, y_target, num_classes=model.num_classes,
+        trapdoor_succ = eval_trapdoor(new_model, test_X, test_Y, y_target, num_classes=model.num_classes,
                                       pattern_dict=pattern_dict)
 
         print("Target: {} - Trapdoor Succ: {}".format(y_target, trapdoor_succ))
@@ -215,12 +223,12 @@ def eval_defense():
             adv_x = adv_x[succ_idx]
             succ_sub_X = sub_X[succ_idx]
 
-            fnr_ls, roc_data, normal_scores, adv_scores = 
-            filter_pattern(bottleneck_model, selected_X, selected_Y,
-                                                                              succ_sub_X, adv_x,
-                                                                              y_target, pattern_dict=pattern_dict,
-                                                                              num_classes=model.num_classes,
-                                                                              filter_ratio=args.filter_ratio)
+            fnr_ls, roc_data, normal_scores, adv_scores =
+            eval_filter_pattern(bottleneck_model, selected_X, selected_Y,
+                          succ_sub_X, adv_x,
+                          y_target, pattern_dict=pattern_dict,
+                          num_classes=model.num_classes,
+                          filter_ratio=args.filter_ratio)
 
             RES[y_target][attack] = {}
             RES[y_target][attack]['attack_succ'] = attack_succ
