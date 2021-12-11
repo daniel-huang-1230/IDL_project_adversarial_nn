@@ -310,7 +310,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
             adv_images = images.copy()
             grad_images = np.zeros(batch_shape)
             for i in range(num_iter):
-                train_index = random.sample(range(10), 7)
+                train_index = random.sample(range(10), 66)
                 test_index = train_index.pop()
 
                 # meta train step
@@ -323,14 +323,14 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
                         beta[j] = 1 / len(train_index)
                     beta_ = [0, 0, 0, 0, 0, 0]
 
-                    auxlogits_num = np.sum(np.array(train_index) < 7)
+                    auxlogits_num = np.sum(np.array(train_index) < 6)
                     if auxlogits_num != 0:
                         for j in train_index:
                             if j < 2:
                                 beta_[j] = 1 / auxlogits_num
 
                     beta_dict = {beta_input[j]: beta[j] for j in range(10)}
-                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(7)}
+                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(6)}
                     adv_images_temp, grad_images = sess.run([x_adv, grad_adv],
                                                             feed_dict={x_input: adv_images, labels_input: labels,
                                                                        grad_input: grad_images,
@@ -348,7 +348,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
                     if test_index < 6:
                         beta_[test_index] = 1
                     beta_dict = {beta_input[j]: beta[j] for j in range(10)}
-                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(7)}
+                    beta_dict_ = {beta_input_[j]: beta_[j] for j in range(6)}
                     adv_images_temp2, grad_images = sess.run([x_adv, grad_adv],
                                                              feed_dict={x_input: adv_images_temp, labels_input: labels,
                                                                     grad_input: grad_images,
