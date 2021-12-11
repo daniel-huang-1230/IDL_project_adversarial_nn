@@ -133,7 +133,7 @@ def graph(x, y, i, num_iter, alpha, x_max, x_min, beta, beta_, grad):
 
     # momentum = FLAGS.momentum
     momentum = 1.0
-    num_classes = 1000
+    num_classes = 1001
 
     with slim.arg_scope(inception_v3.inception_v3_arg_scope()):
         logits_v3, end_points_v3 = inception_v3.inception_v3(
@@ -241,7 +241,7 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
 
 
     eps = 2.0 * max_epsilon / 255.0
-    num_classes = 1000
+    num_classes = 1001
     batch_shape = [batch_size, image_height, image_width, 3]
 
     # Logger
@@ -305,10 +305,10 @@ def generate_mgaa_adv(max_epsilon, num_iter, batch_size, image_height, image_wid
             # images = resize_images_np(inputs_batch, batch_shape, image_height, image_width)
             images = inputs_batch  # TODO verify that the input batch is from trapdoor's full Imagenet dataset
             print("images from Trapdoor shape = ", images.shape)
-            labels = labels_batch
+            labels = np.insert(labels_batch, 0, np.zeros((batch_size, 1)))
 
             print("labels (batch) from Trapdoor shape = ", labels.shape)
-            print(labels_batch)
+            # print(labels_batch)
             adv_images = images.copy()
             grad_images = np.zeros(batch_shape)
             for i in range(num_iter):
